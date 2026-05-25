@@ -13,3 +13,9 @@ which node
 node -v
 npm -v
 func --version
+
+
+Azurite work (local):
+azurite --silent --location c:\azurite --debug c:\azurite\debug.log
+
+Important to go to networking and add current ipv4 to the exclusion (sql server)

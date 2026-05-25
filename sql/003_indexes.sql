@@ -1,31 +1,23 @@
-CREATE UNIQUE INDEX IX_Incidents_PublicId
-    ON dbo.Incidents(PublicId);
+CREATE UNIQUE INDEX IX_Incident_PublicId
+    ON dbo.Incident(PublicId);
 GO
 
-CREATE INDEX IX_Incidents_StatusCode
-    ON dbo.Incidents(StatusCode);
+CREATE INDEX IX_Incident_StatusCode
+    ON dbo.Incident(StatusCode);
 GO
 
-CREATE INDEX IX_Incidents_SeverityCode
-    ON dbo.Incidents(SeverityCode);
+CREATE INDEX IX_Incident_SeverityCode
+    ON dbo.Incident(SeverityCode);
 GO
 
-CREATE INDEX IX_Incidents_CategoryCode
-    ON dbo.Incidents(CategoryCode);
+CREATE INDEX IX_Incident_CategoryCode
+    ON dbo.Incident(CategoryCode);
 GO
 
-CREATE INDEX IX_Incidents_SubmittedUtc
-    ON dbo.Incidents(SubmittedUtc DESC);
+CREATE INDEX IX_Incident_SubmittedUtc
+    ON dbo.Incident(SubmittedUtc DESC);
 GO
 
-CREATE INDEX IX_IncidentEvidence_IncidentId
-    ON dbo.IncidentEvidence(IncidentId);
-GO
-
-CREATE INDEX IX_IncidentAudit_IncidentId_PerformedUtc
-    ON dbo.IncidentAudit(IncidentId, PerformedUtc DESC);
-GO
-
-CREATE INDEX IX_IncidentComments_IncidentId_CreatedUtc
-    ON dbo.IncidentComments(IncidentId, CreatedUtc DESC);
+CREATE INDEX IX_IncidentComment_IncidentId_CreatedUtc
+    ON dbo.IncidentComment(IncidentId, CreatedUtc DESC);
 GO

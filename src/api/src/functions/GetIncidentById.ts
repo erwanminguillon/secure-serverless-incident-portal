@@ -6,10 +6,9 @@ import {
 } from "@azure/functions";
 
 import { createApiError } from "../shared/models/ApiErrors";
-import type { Incident } from "../shared/models/Incident";
-
 import { getCorrelationId } from "../shared/utils/correlation";
 import { isAuthenticatedAdmin } from "../shared/utils/adminAuth";
+import { getIncidentById as getIncidentByIdFromRepo } from "../shared/db/sqlIncidentRepository";
 
 export async function getIncidentById(
   request: HttpRequest,
@@ -42,34 +41,22 @@ export async function getIncidentById(
       };
     }
 
-    // TODO:
-    // - Query incident by IncidentId from SQL
-    // - Return 404 if not found
+    const incident = await getIncidentByIdFromRepo(incidentId);
 
-    const mockIncident: Incident = {
-      incidentId,
-      publicId: "INC-2026-000001",
-      trackingTokenHash: "hashed-token-placeholder",
-      title: "Suspicious login alert from unknown location",
-      description: "I received a login alert for an account I did not access.",
-      reportTypeCode: "incident",
-      categoryCode: "account_compromise",
-      severityCode: "medium",
-      statusCode: "triage",
-      submitterName: "Jane Doe",
-      submitterEmail: "jane@example.com",
-      isAnonymous: false,
-      assignedReviewerId: "aad-object-id-here",
-      assignedReviewerDisplayName: "Erwan Minguillon Le Page",
-      submittedUtc: new Date().toISOString(),
-      createdUtc: new Date().toISOString(),
-      updatedUtc: new Date().toISOString(),
-      lastStatusChangedUtc: new Date().toISOString(),
-    };
+    if (!incident) {
+      return {
+        status: 404,
+        jsonBody: createApiError(
+          "NOT_FOUND",
+          "Incident not found.",
+          correlationId
+        ),
+      };
+    }
 
     return {
       status: 200,
-      jsonBody: mockIncident,
+      jsonBody: incident,
       headers: {
         "x-correlation-id": correlationId,
       },

@@ -1,3 +1,4 @@
+console.log("working!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 import "./functions/SubmitIncident";
 import "./functions/TrackIncident";
 import "./functions/ListIncidents";

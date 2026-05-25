@@ -11,7 +11,7 @@ import type {
 } from "../shared/models/Incident";
 import { createApiError } from "../shared/models/ApiErrors";
 import { getCorrelationId } from "../shared/utils/correlation";
-import { createIncident } from "../shared/db/mockIncidentRepository";
+import { createIncident } from "../shared/db/sqlIncidentRepository";
 import { validateCreateIncidentRequest } from "../shared/validation/incidentValidation";
 
 export async function submitIncident(

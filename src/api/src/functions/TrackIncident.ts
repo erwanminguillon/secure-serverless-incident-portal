@@ -5,13 +5,10 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
-import type {
-  TrackIncidentRequest,
-  TrackIncidentResponse,
-} from "../shared/models/Incident";
+import type { TrackIncidentRequest } from "../shared/models/Incident";
 import { createApiError } from "../shared/models/ApiErrors";
 import { getCorrelationId } from "../shared/utils/correlation";
-import { trackIncident as trackIncidentFromRepo } from "../shared/db/mockIncidentRepository";
+import { trackIncident as trackIncidentFromRepo } from "../shared/db/sqlIncidentRepository";
 
 export async function trackIncident(
   request: HttpRequest,
@@ -22,50 +19,53 @@ export async function trackIncident(
   try {
     const body = (await request.json()) as Partial<TrackIncidentRequest>;
 
-    if (!body.publicId || !body.trackingToken) {
+    const errors: { field: string; message: string }[] = [];
+
+    if (!body.publicId || body.publicId.trim().length === 0) {
+      errors.push({ field: "publicId", message: "PublicId is required." });
+    }
+
+    if (!body.trackingToken || body.trackingToken.trim().length === 0) {
+      errors.push({
+        field: "trackingToken",
+        message: "Tracking token is required.",
+      });
+    }
+
+    if (errors.length > 0) {
       return {
         status: 400,
         jsonBody: createApiError(
           "VALIDATION_ERROR",
           "Both publicId and trackingToken are required.",
           correlationId,
-          [
-            !body.publicId
-              ? { field: "publicId", message: "PublicId is required." }
-              : undefined,
-            !body.trackingToken
-              ? { field: "trackingToken", message: "Tracking token is required." }
-              : undefined,
-          ].filter(Boolean) as { field: string; message: string }[],
+          errors
         ),
       };
     }
 
-    // TODO:
-    // - Look up incident by PublicId
-    // - Hash supplied tracking token
-    // - Compare with TrackingTokenHash
-    // - Return only limited-safe data
-
-    const result = await trackIncidentFromRepo(body.publicId, body.trackingToken);
+    const result = await trackIncidentFromRepo(
+      body.publicId!.trim(),
+      body.trackingToken!.trim()
+    );
 
     if (!result) {
-    return {
+      return {
         status: 401,
         jsonBody: createApiError(
-        "TRACKING_TOKEN_INVALID",
-        "The incident reference or tracking token is invalid.",
-        correlationId
+          "TRACKING_TOKEN_INVALID",
+          "The incident reference or tracking token is invalid.",
+          correlationId
         ),
-    };
+      };
     }
 
     return {
-    status: 200,
-    jsonBody: result,
-    headers: {
+      status: 200,
+      jsonBody: result,
+      headers: {
         "x-correlation-id": correlationId,
-    },
+      },
     };
   } catch (error) {
     context.error("TrackIncident failed", error);

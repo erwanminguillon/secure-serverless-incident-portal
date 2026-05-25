@@ -5,14 +5,15 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
-import type {
-  AddIncidentCommentRequest,
-  AddIncidentCommentResponse,
-} from "../shared/models/IncidentComment";
+import type { AddIncidentCommentRequest } from "../shared/models/IncidentComment";
 import { createApiError } from "../shared/models/ApiErrors";
 
 import { getCorrelationId } from "../shared/utils/correlation";
-import { isAuthenticatedAdmin } from "../shared/utils/adminAuth";
+import {
+  getAuthenticatedAdminIdentity,
+  isAuthenticatedAdmin,
+} from "../shared/utils/adminAuth";
+import { addIncidentComment as addIncidentCommentInRepo } from "../shared/db/sqlIncidentRepository";
 
 export async function addIncidentComment(
   request: HttpRequest,
@@ -22,6 +23,19 @@ export async function addIncidentComment(
 
   try {
     if (!isAuthenticatedAdmin(request)) {
+      return {
+        status: 401,
+        jsonBody: createApiError(
+          "UNAUTHORIZED",
+          "Authentication is required.",
+          correlationId
+        ),
+      };
+    }
+
+    const adminIdentity = getAuthenticatedAdminIdentity(request);
+
+    if (!adminIdentity) {
       return {
         status: 401,
         jsonBody: createApiError(
@@ -59,18 +73,24 @@ export async function addIncidentComment(
       };
     }
 
-    // TODO:
-    // Insert comment into SQL
-    // Create audit entry (comment_added)
-    // Attach admin identity from claims
+  const response = await addIncidentCommentInRepo(
+    incidentId,
+    body.commentText.trim(),
+    adminIdentity.principalId,
+    adminIdentity.principalName
+  );
 
-    const response: AddIncidentCommentResponse = {
-      commentId: crypto.randomUUID(),
-      incidentId,
-      commentText: body.commentText.trim(),
-      isInternal: true,
-      createdUtc: new Date().toISOString(),
-    };
+
+    if (!response) {
+      return {
+        status: 404,
+        jsonBody: createApiError(
+          "NOT_FOUND",
+          "Incident not found.",
+          correlationId
+        ),
+      };
+    }
 
     return {
       status: 201,

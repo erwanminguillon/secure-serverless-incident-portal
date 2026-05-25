@@ -4,35 +4,6 @@ CREATE SEQUENCE dbo.IncidentNumberSequence
     INCREMENT BY 1;
 GO
 
-CREATE TABLE dbo.RefStatus (
-    StatusCode NVARCHAR(50) NOT NULL PRIMARY KEY,
-    DisplayName NVARCHAR(100) NOT NULL,
-    SortOrder INT NOT NULL,
-    IsTerminal BIT NOT NULL
-);
-GO
-
-CREATE TABLE dbo.RefSeverity (
-    SeverityCode NVARCHAR(50) NOT NULL PRIMARY KEY,
-    DisplayName NVARCHAR(100) NOT NULL,
-    SortOrder INT NOT NULL
-);
-GO
-
-CREATE TABLE dbo.RefReportType (
-    ReportTypeCode NVARCHAR(50) NOT NULL PRIMARY KEY,
-    DisplayName NVARCHAR(100) NOT NULL,
-    SortOrder INT NOT NULL
-);
-GO
-
-CREATE TABLE dbo.RefCategory (
-    CategoryCode NVARCHAR(50) NOT NULL PRIMARY KEY,
-    DisplayName NVARCHAR(100) NOT NULL,
-    SortOrder INT NOT NULL
-);
-GO
-
 CREATE TABLE dbo.Incident (
     IncidentId UNIQUEIDENTIFIER NOT NULL PRIMARY KEY,
     IncidentNumber INT NOT NULL UNIQUE,
@@ -59,19 +30,7 @@ CREATE TABLE dbo.Incident (
     UpdatedUtc DATETIME2 NOT NULL,
     LastStatusChangedUtc DATETIME2 NOT NULL,
 
-    RowVersion ROWVERSION NOT NULL,
-
-    CONSTRAINT FK_Incident_RefStatus
-        FOREIGN KEY (StatusCode) REFERENCES dbo.RefStatus(StatusCode),
-
-    CONSTRAINT FK_Incident_RefSeverity
-        FOREIGN KEY (SeverityCode) REFERENCES dbo.RefSeverity(SeverityCode),
-
-    CONSTRAINT FK_Incident_RefReportType
-        FOREIGN KEY (ReportTypeCode) REFERENCES dbo.RefReportType(ReportTypeCode),
-
-    CONSTRAINT FK_Incident_RefCategory
-        FOREIGN KEY (CategoryCode) REFERENCES dbo.RefCategory(CategoryCode)
+    RowVersion ROWVERSION NOT NULL
 );
 GO
 
@@ -87,4 +46,15 @@ CREATE TABLE dbo.IncidentComment (
     CONSTRAINT FK_IncidentComment_Incident
         FOREIGN KEY (IncidentId) REFERENCES dbo.Incident(IncidentId)
 );
+GO
+
+CREATE INDEX IX_Incident_PublicId ON dbo.Incident (PublicId);
+GO
+
+CREATE INDEX IX_Incident_StatusCode_SubmittedUtc
+    ON dbo.Incident (StatusCode, SubmittedUtc DESC);
+GO
+
+CREATE INDEX IX_IncidentComment_IncidentId_CreatedUtc
+    ON dbo.IncidentComment (IncidentId, CreatedUtc DESC);
 GO
