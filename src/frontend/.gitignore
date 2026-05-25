@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Extra 
+*.PublishSettings
+*.zip
+deploy_pkg/
+built.zip
+frontend.zip
+source.zip
