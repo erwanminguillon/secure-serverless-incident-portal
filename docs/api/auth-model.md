@@ -80,7 +80,6 @@ This gives:
 
 - protected admin routes
 - low-complexity Azure-native authentication
-- good portfolio/interview value
 - no custom identity system required for internal users
 
 ---
@@ -149,23 +148,8 @@ Allowed:
 
 ## MVP role model
 
-For MVP, admin-side authenticated users can share one privileged role.
+For MVP, admin-side authenticated users will share one privileged role.
 
-### Suggested logical role names
-
-- `reviewer`
-- `admin`
-
-### MVP simplification
-
-You may initially treat all authenticated internal users as one privileged admin/reviewer class.
-
-Later, you can extend this to:
-- reviewer-only permissions
-- admin-only permissions
-- role-based UI differences
-
----
 
 ## Secrets and credential handling
 

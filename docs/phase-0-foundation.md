@@ -1,7 +1,0 @@
-- chosen region = francecentral
-- allowed backup regions
-- final resource names
-- locked Azure stack
-- MVP scope
-- security principles
-- cost rules

@@ -1,4 +1,3 @@
-cat > scripts/deploy-frontend.sh <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -7,21 +6,33 @@ WEB_APP="web-ssip-dev-frc-01"
 ZIP_NAME="frontend.zip"
 EXPECTED_API_HOST="func-ssip-dev-frc-01"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+FRONTEND_DIR="${REPO_ROOT}/src/frontend"
+
+echo "Repo root: ${REPO_ROOT}"
+echo "Frontend directory: ${FRONTEND_DIR}"
+
+if [ ! -d "${FRONTEND_DIR}" ]; then
+  echo "ERROR: Frontend directory not found: ${FRONTEND_DIR}"
+  exit 1
+fi
+
 echo "Building frontend for Azure deployment..."
-cd src/frontend
+cd "${FRONTEND_DIR}"
 
 npm install
 npm run build -- --mode deployment
 
 echo "Verifying API URL is baked into the built assets..."
-if ! grep -R "$EXPECTED_API_HOST" dist >/dev/null; then
+if ! grep -R "${EXPECTED_API_HOST}" dist >/dev/null; then
   echo "ERROR: Expected Function App hostname was not found in dist."
-  echo "Check .env.deployment and VITE_API_BASE_URL."
+  echo "Check src/frontend/.env.deployment and VITE_API_BASE_URL."
   exit 1
 fi
 
 echo "Creating frontend ZIP from dist contents..."
-rm -f "$ZIP_NAME"
+rm -f "${ZIP_NAME}"
 
 python - <<'PY'
 import os
@@ -38,12 +49,15 @@ print("Created frontend.zip")
 PY
 
 echo ""
-echo "Upload src/frontend/${ZIP_NAME} to Azure Cloud Shell, then run:"
+echo "Frontend package created successfully:"
+echo "${FRONTEND_DIR}/${ZIP_NAME}"
+echo ""
+echo "Upload frontend.zip to Azure Cloud Shell, then run:"
 echo ""
 echo "az webapp deploy \\"
 echo "  --resource-group ${RESOURCE_GROUP} \\"
 echo "  --name ${WEB_APP} \\"
-echo "  --src-path ./${ZIP_NAME} \\"
+echo "  --src-path ./frontend.zip \\"
 echo "  --type zip"
 echo ""
 echo "If needed, ensure startup command is:"
@@ -52,6 +66,3 @@ echo "az webapp config set \\"
 echo "  --resource-group ${RESOURCE_GROUP} \\"
 echo "  --name ${WEB_APP} \\"
 echo "  --startup-file \"pm2 serve /home/site/wwwroot --spa --no-daemon\""
-EOF
-
-chmod +x scripts/deploy-frontend.sh

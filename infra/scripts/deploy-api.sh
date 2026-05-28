@@ -1,4 +1,3 @@
-cat > scripts/deploy-api.sh <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -7,21 +6,33 @@ FUNCTION_APP="func-ssip-dev-frc-01"
 ZIP_NAME="built.zip"
 DEPLOY_DIR="deploy_pkg"
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+API_DIR="${REPO_ROOT}/src/api"
+
+echo "Repo root: ${REPO_ROOT}"
+echo "API directory: ${API_DIR}"
+
+if [ ! -d "${API_DIR}" ]; then
+  echo "ERROR: API directory not found: ${API_DIR}"
+  exit 1
+fi
+
 echo "Building API..."
-cd src/api
+cd "${API_DIR}"
 
 npm run build
 
 echo "Preparing clean deployment package..."
-rm -rf "$DEPLOY_DIR" "$ZIP_NAME"
-mkdir "$DEPLOY_DIR"
+rm -rf "${DEPLOY_DIR}" "${ZIP_NAME}"
+mkdir "${DEPLOY_DIR}"
 
-cp -r dist "$DEPLOY_DIR/"
-cp package.json "$DEPLOY_DIR/"
-cp host.json "$DEPLOY_DIR/"
+cp -r dist "${DEPLOY_DIR}/"
+cp package.json "${DEPLOY_DIR}/"
+cp host.json "${DEPLOY_DIR}/"
 
 echo "Installing production dependencies inside deployment package..."
-cd "$DEPLOY_DIR"
+cd "${DEPLOY_DIR}"
 npm install --omit=dev
 cd ..
 
@@ -60,6 +71,7 @@ with zipfile.ZipFile("built.zip") as z:
     names = set(z.namelist())
 
 missing = []
+
 for r in required:
     if r not in names:
         missing.append(r)
@@ -70,15 +82,20 @@ for r in required:
 if missing:
     print("Deployment package validation failed.")
     sys.exit(1)
+
+print("Deployment package validation passed.")
 PY
 
 echo ""
-echo "Upload src/api/${ZIP_NAME} to Azure Cloud Shell, then run:"
+echo "API package created successfully:"
+echo "${API_DIR}/${ZIP_NAME}"
+echo ""
+echo "Upload built.zip to Azure Cloud Shell, then run:"
 echo ""
 echo "az functionapp deployment source config-zip \\"
 echo "  --resource-group ${RESOURCE_GROUP} \\"
 echo "  --name ${FUNCTION_APP} \\"
-echo "  --src ./${ZIP_NAME}"
+echo "  --src ./built.zip"
 echo ""
 echo "Then verify:"
 echo ""
@@ -86,6 +103,3 @@ echo "az functionapp function list \\"
 echo "  --resource-group ${RESOURCE_GROUP} \\"
 echo "  --name ${FUNCTION_APP} \\"
 echo "  --output table"
-EOF
-
-chmod +x scripts/deploy-api.sh
