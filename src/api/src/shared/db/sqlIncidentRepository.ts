@@ -466,6 +466,33 @@ export async function addIncidentComment(
   };
 }
 
+export async function listIncidentComments(
+  incidentId: string
+): Promise<{ items: IncidentComment[] }> {
+  const pool = await getSqlPool();
+
+  const result = await pool
+    .request()
+    .input("IncidentId", sql.UniqueIdentifier, incidentId)
+    .query(`
+      SELECT
+        CommentId,
+        IncidentId,
+        CommentText,
+        IsInternal,
+        CreatedById,
+        CreatedByDisplayName,
+        CreatedUtc
+      FROM dbo.IncidentComment
+      WHERE IncidentId = @IncidentId
+      ORDER BY CreatedUtc DESC
+    `);
+
+  return {
+    items: result.recordset.map(mapIncidentComment),
+  };
+}
+
 /* ========================= EVIDENCE STUBS ========================= */
 
 export async function uploadEvidence(

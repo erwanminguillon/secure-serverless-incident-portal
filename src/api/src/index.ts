@@ -7,3 +7,4 @@ import "./functions/GetIncidentById";
 import "./functions/AddIncidentComment";
 import "./functions/GetReferenceData";
 import "./functions/UploadEvidence";
+import "./functions/ListIncidentsComments";
