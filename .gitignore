@@ -152,3 +152,6 @@ build/
 local.settings.json
 coverage/
 .vscode/
+
+# zip files
+*.zip

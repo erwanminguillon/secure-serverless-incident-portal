@@ -9,7 +9,7 @@ import type { IncidentQueryParams } from "../shared/models/Incident";
 import { createApiError } from "../shared/models/ApiErrors";
 
 import { getCorrelationId } from "../shared/utils/correlation";
-import { isAuthenticatedAdmin } from "../shared/utils/adminAuth";
+import { isAuthenticatedAdminAsync } from "../shared/auth/adminAuth";
 import { listIncidents as listIncidentsFromRepo } from "../shared/db/sqlIncidentRepository";
 
 function parsePositiveInt(value: string | null, fallback: number): number {
@@ -33,7 +33,7 @@ export async function listIncidents(
   const correlationId = getCorrelationId(request);
 
   try {
-    if (!isAuthenticatedAdmin(request)) {
+    if (!isAuthenticatedAdminAsync(request)) {
       return {
         status: 401,
         jsonBody: createApiError(

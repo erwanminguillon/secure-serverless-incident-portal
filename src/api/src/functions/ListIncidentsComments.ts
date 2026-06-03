@@ -7,7 +7,7 @@ import {
 
 import { createApiError } from "../shared/models/ApiErrors";
 import { getCorrelationId } from "../shared/utils/correlation";
-import { isAuthenticatedAdmin } from "../shared/utils/adminAuth";
+import { isAuthenticatedAdminAsync } from "../shared/auth/adminAuth";
 import { listIncidentComments as listIncidentCommentsFromRepo } from "../shared/db/sqlIncidentRepository";
 
 export async function listIncidentComments(
@@ -17,7 +17,7 @@ export async function listIncidentComments(
   const correlationId = getCorrelationId(request);
 
   try {
-    if (!isAuthenticatedAdmin(request)) {
+    if (!isAuthenticatedAdminAsync(request)) {
       return {
         status: 401,
         jsonBody: createApiError(

@@ -1,17 +1,24 @@
 import { useEffect, useState } from "react";
-import type { CSSProperties, FormEvent } from "react";
+import type { CSSProperties, FormEvent, ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import {
   addIncidentComment,
+  adminLogout,
+  getAdminMe,
   getIncidentById,
   getReferenceData,
-  type IncidentDetail,
-  type ReferenceData,
+  listIncidentComments,
   updateIncident,
 } from "../../api/adminApi";
 
-import { clearAdminSession, isAdminAuthenticated } from "./adminSession";
+import type {
+  IncidentComment,
+  IncidentDetail,
+  ReferenceData,
+} from "../../api/adminApi";
+
+import { clearAdminSession, setAdminSession } from "./adminSession";
 
 const styles: Record<string, CSSProperties> = {
   pageHeader: {
@@ -23,7 +30,7 @@ const styles: Record<string, CSSProperties> = {
   },
   eyebrow: {
     margin: 0,
-    color: "#0080FF",
+    color: "#0078d4",
     fontSize: "12px",
     fontWeight: 800,
     letterSpacing: "0.12em",
@@ -31,31 +38,31 @@ const styles: Record<string, CSSProperties> = {
   },
   title: {
     margin: "6px 0 6px",
-    color: "#001E3B",
+    color: "#001e3b",
     fontSize: "32px",
     lineHeight: 1.1,
     letterSpacing: "-0.03em",
   },
   subtitle: {
     margin: 0,
-    color: "#53657A",
+    color: "#53657a",
     fontSize: "14px",
   },
   layout: {
     display: "grid",
-    gridTemplateColumns: "minmax(0, 1.8fr) minmax(360px, 0.9fr)",
+    gridTemplateColumns: "minmax(0, 1.8fr) minmax(340px, 0.9fr)",
     gap: "18px",
   },
   card: {
-    border: "1px solid #C9DEF5",
-    borderRadius: "20px",
-    background: "#FFFFFF",
-    boxShadow: "0 14px 35px rgba(0, 69, 137, 0.12)",
+    border: "1px solid var(--ssip-border)",
+    borderRadius: "14px",
+    background: "#ffffff",
+    boxShadow: "var(--ssip-shadow)",
     padding: "20px",
   },
   cardTitle: {
     margin: "0 0 14px",
-    color: "#001E3B",
+    color: "#001e3b",
     fontSize: "18px",
     fontWeight: 800,
   },
@@ -65,14 +72,14 @@ const styles: Record<string, CSSProperties> = {
     gap: "14px",
   },
   metaItem: {
-    border: "1px solid #E1EFFD",
-    borderRadius: "14px",
-    background: "#F7FBFF",
+    border: "1px solid var(--ssip-border)",
+    borderRadius: "10px",
+    background: "#f8fbfe",
     padding: "12px",
   },
   metaLabel: {
     margin: "0 0 4px",
-    color: "#53657A",
+    color: "#004578",
     fontSize: "12px",
     fontWeight: 800,
     textTransform: "uppercase",
@@ -80,18 +87,18 @@ const styles: Record<string, CSSProperties> = {
   },
   metaValue: {
     margin: 0,
-    color: "#001E3B",
+    color: "#001e3b",
     fontSize: "14px",
     fontWeight: 700,
     wordBreak: "break-word",
   },
   description: {
     marginTop: "18px",
-    border: "1px solid #E1EFFD",
-    borderRadius: "14px",
-    background: "#F7FBFF",
+    border: "1px solid var(--ssip-border)",
+    borderRadius: "10px",
+    background: "#f8fbfe",
     padding: "14px",
-    color: "#001E3B",
+    color: "#001e3b",
     whiteSpace: "pre-wrap",
     lineHeight: 1.55,
   },
@@ -101,74 +108,91 @@ const styles: Record<string, CSSProperties> = {
   },
   field: {
     width: "100%",
-    border: "1px solid #C9DEF5",
-    borderRadius: "10px",
-    background: "#FFFFFF",
-    color: "#001E3B",
+    border: "1px solid var(--ssip-border)",
+    borderRadius: "8px",
+    background: "#ffffff",
+    color: "#001e3b",
     padding: "10px 12px",
     fontSize: "14px",
   },
   label: {
     display: "block",
     marginBottom: "6px",
-    color: "#001E3B",
+    color: "#001e3b",
     fontSize: "13px",
     fontWeight: 800,
   },
   primaryButton: {
-    border: "1px solid #0080FF",
-    background: "#0080FF",
-    color: "#FFFFFF",
-    borderRadius: "10px",
+    border: "1px solid #0078d4",
+    background: "#0078d4",
+    color: "#ffffff",
+    borderRadius: "8px",
     padding: "10px 13px",
     fontSize: "14px",
     fontWeight: 800,
     cursor: "pointer",
   },
   secondaryButton: {
-    border: "1px solid #C9DEF5",
-    background: "#FFFFFF",
-    color: "#004589",
-    borderRadius: "10px",
+    border: "1px solid var(--ssip-border)",
+    background: "#ffffff",
+    color: "#004578",
+    borderRadius: "8px",
     padding: "10px 13px",
     fontSize: "14px",
     fontWeight: 800,
     cursor: "pointer",
+    textDecoration: "none",
   },
   dangerButton: {
-    border: "1px solid #FECACA",
-    background: "#FFFFFF",
-    color: "#B91C1C",
-    borderRadius: "10px",
+    border: "1px solid #fecaca",
+    background: "#ffffff",
+    color: "#b91c1c",
+    borderRadius: "8px",
     padding: "10px 13px",
     fontSize: "14px",
     fontWeight: 800,
     cursor: "pointer",
   },
   alertError: {
-    border: "1px solid #FECACA",
-    borderRadius: "14px",
-    background: "#FEE2E2",
-    color: "#991B1B",
+    border: "1px solid #fecaca",
+    borderRadius: "10px",
+    background: "#fee2e2",
+    color: "#991b1b",
     padding: "14px",
     marginBottom: "16px",
   },
   alertSuccess: {
-    border: "1px solid #BBF7D0",
-    borderRadius: "14px",
-    background: "#DCFCE7",
+    border: "1px solid #bbf7d0",
+    borderRadius: "10px",
+    background: "#dcfce7",
     color: "#166534",
     padding: "14px",
     marginBottom: "16px",
   },
-  note: {
-    border: "1px solid #89C4FF",
-    borderRadius: "14px",
-    background: "#D8EBFF",
-    color: "#004589",
+  info: {
+    border: "1px solid #c7e0f4",
+    borderRadius: "10px",
+    background: "#e5f1fb",
+    color: "#004578",
+    padding: "14px",
+    marginBottom: "16px",
+    fontSize: "14px",
+  },
+  emptyState: {
+    border: "1px solid var(--ssip-border)",
+    borderRadius: "10px",
+    background: "#f8fbfe",
+    color: "#53657a",
     padding: "14px",
     fontSize: "14px",
     lineHeight: 1.5,
+  },
+  commentItem: {
+    border: "1px solid var(--ssip-border)",
+    borderLeft: "4px solid #0078d4",
+    borderRadius: "10px",
+    background: "#ffffff",
+    padding: "14px",
   },
 };
 
@@ -200,34 +224,41 @@ function badgeStyle(kind: "status" | "severity", value: string): CSSProperties {
 
   if (kind === "severity") {
     if (value === "critical") {
-      return { ...base, background: "#FEE2E2", color: "#991B1B" };
+      return { ...base, background: "#fee2e2", color: "#991b1b" };
     }
+
     if (value === "high") {
-      return { ...base, background: "#FFEDD5", color: "#9A3412" };
+      return { ...base, background: "#ffedd5", color: "#9a3412" };
     }
+
     if (value === "medium") {
-      return { ...base, background: "#FEF3C7", color: "#92400E" };
+      return { ...base, background: "#fef3c7", color: "#92400e" };
     }
-    return { ...base, background: "#DCFCE7", color: "#166534" };
+
+    return { ...base, background: "#dcfce7", color: "#166534" };
   }
 
   if (value === "rejected") {
-    return { ...base, background: "#FEE2E2", color: "#991B1B" };
-  }
-  if (value === "resolved") {
-    return { ...base, background: "#DCFCE7", color: "#166534" };
-  }
-  if (value === "investigating") {
-    return { ...base, background: "#EDE9FE", color: "#6D28D9" };
-  }
-  if (value === "triage") {
-    return { ...base, background: "#D8EBFF", color: "#004589" };
-  }
-  if (value === "closed") {
-    return { ...base, background: "#E5E7EB", color: "#374151" };
+    return { ...base, background: "#fee2e2", color: "#991b1b" };
   }
 
-  return { ...base, background: "#EEF6FF", color: "#004589" };
+  if (value === "resolved") {
+    return { ...base, background: "#dcfce7", color: "#166534" };
+  }
+
+  if (value === "investigating") {
+    return { ...base, background: "#ede9fe", color: "#6d28d9" };
+  }
+
+  if (value === "triage") {
+    return { ...base, background: "#e5f1fb", color: "#004578" };
+  }
+
+  if (value === "closed") {
+    return { ...base, background: "#e5e7eb", color: "#374151" };
+  }
+
+  return { ...base, background: "#f3f8fd", color: "#004578" };
 }
 
 export function AdminIncidentDetailPage() {
@@ -236,6 +267,7 @@ export function AdminIncidentDetailPage() {
 
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
   const [referenceData, setReferenceData] = useState<ReferenceData | null>(null);
+  const [comments, setComments] = useState<IncidentComment[]>([]);
 
   const [statusCode, setStatusCode] = useState("");
   const [severityCode, setSeverityCode] = useState("");
@@ -244,10 +276,17 @@ export function AdminIncidentDetailPage() {
   const [commentText, setCommentText] = useState("");
 
   const [loading, setLoading] = useState(true);
+  const [loadStartedAt, setLoadStartedAt] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [savingUpdate, setSavingUpdate] = useState(false);
   const [savingComment, setSavingComment] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  async function loadComments(targetIncidentId: string) {
+    const response = await listIncidentComments(targetIncidentId);
+    setComments(response.items);
+  }
 
   async function loadPage() {
     if (!incidentId) {
@@ -258,15 +297,22 @@ export function AdminIncidentDetailPage() {
 
     try {
       setLoading(true);
+      setLoadStartedAt(Date.now());
       setError(null);
 
-      const [incidentResponse, referenceResponse] = await Promise.all([
-        getIncidentById(incidentId),
-        getReferenceData(),
-      ]);
+      const identity = await getAdminMe();
+      setAdminSession(identity.principalName);
+
+      const [incidentResponse, referenceResponse, commentsResponse] =
+        await Promise.all([
+          getIncidentById(incidentId),
+          getReferenceData(),
+          listIncidentComments(incidentId),
+        ]);
 
       setIncident(incidentResponse);
       setReferenceData(referenceResponse);
+      setComments(commentsResponse.items);
       setStatusCode(incidentResponse.statusCode);
       setSeverityCode(incidentResponse.severityCode);
       setAssignedReviewerDisplayName(
@@ -276,6 +322,7 @@ export function AdminIncidentDetailPage() {
       handleApiError(err);
     } finally {
       setLoading(false);
+      setLoadStartedAt(null);
     }
   }
 
@@ -301,13 +348,21 @@ export function AdminIncidentDetailPage() {
   }
 
   useEffect(() => {
-    if (!isAdminAuthenticated()) {
-      navigate("/admin");
+    loadPage();
+  }, [incidentId]);
+
+  useEffect(() => {
+    if (!loading || loadStartedAt === null) {
+      setElapsedSeconds(0);
       return;
     }
 
-    loadPage();
-  }, [incidentId]);
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - loadStartedAt) / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [loading, loadStartedAt]);
 
   async function handleUpdateSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -321,7 +376,7 @@ export function AdminIncidentDetailPage() {
       setError(null);
       setSuccessMessage(null);
 
-      const updatedIncident = await updateIncident(incidentId, {
+      await updateIncident(incidentId, {
         statusCode,
         severityCode,
         assignedReviewerDisplayName:
@@ -330,20 +385,7 @@ export function AdminIncidentDetailPage() {
             : null,
       });
 
-      setIncident((current) =>
-        current
-          ? {
-              ...current,
-              statusCode: updatedIncident.statusCode,
-              severityCode: updatedIncident.severityCode,
-              assignedReviewerDisplayName:
-                updatedIncident.assignedReviewerDisplayName,
-              assignedReviewerId: updatedIncident.assignedReviewerId,
-              updatedUtc: updatedIncident.updatedUtc,
-            }
-          : current
-      );
-
+      await loadPage();
       setSuccessMessage("Incident updated successfully.");
     } catch (err) {
       handleApiError(err);
@@ -366,11 +408,10 @@ export function AdminIncidentDetailPage() {
       setSuccessMessage(null);
 
       await addIncidentComment(incidentId, commentText.trim());
+      await loadComments(incidentId);
 
       setCommentText("");
-      setSuccessMessage(
-        "Comment added successfully. Comment display requires the upcoming comments API."
-      );
+      setSuccessMessage("Comment added successfully.");
     } catch (err) {
       handleApiError(err);
     } finally {
@@ -378,15 +419,28 @@ export function AdminIncidentDetailPage() {
     }
   }
 
-  function handleLogout() {
-    clearAdminSession();
-    navigate("/admin");
+  async function handleLogout() {
+    try {
+      await adminLogout();
+    } finally {
+      clearAdminSession();
+      navigate("/admin");
+    }
   }
 
   if (loading) {
     return (
-      <section className="ssip-card" style={{ padding: "22px" }}>
-        Loading incident...
+      <section>
+        <div style={styles.info}>
+          <strong>Loading incident details...</strong>
+          <p style={{ margin: "8px 0 0", lineHeight: 1.5 }}>
+            The first request can take up to 60 seconds while Azure starts the
+            serverless backend and database. Please keep this page open.
+          </p>
+          <p style={{ margin: "8px 0 0", fontWeight: 800 }}>
+            Elapsed: {elapsedSeconds}s
+          </p>
+        </div>
       </section>
     );
   }
@@ -464,13 +518,41 @@ export function AdminIncidentDetailPage() {
           <section style={styles.card}>
             <h3 style={styles.cardTitle}>Internal comments</h3>
 
-            <div style={styles.note}>
-              Comments can currently be added, but existing comments are not
-              displayed yet because the backend does not expose a GET comments
-              endpoint. The next backend task is to add:
-              <br />
-              <code>GET /api/internal/incidents/{`{incidentId}`}/comments</code>
-            </div>
+            {comments.length === 0 && (
+              <div style={styles.emptyState}>
+                No internal comments have been added yet.
+              </div>
+            )}
+
+            {comments.length > 0 && (
+              <div style={{ display: "grid", gap: "12px" }}>
+                {comments.map((comment) => (
+                  <article key={comment.commentId} style={styles.commentItem}>
+                    <p
+                      style={{
+                        margin: "0 0 8px",
+                        color: "#001e3b",
+                        lineHeight: 1.55,
+                        whiteSpace: "pre-wrap",
+                      }}
+                    >
+                      {comment.commentText}
+                    </p>
+
+                    <p
+                      style={{
+                        margin: 0,
+                        color: "#53657a",
+                        fontSize: "12px",
+                      }}
+                    >
+                      {comment.createdByDisplayName ?? "Unknown admin"} ·{" "}
+                      {formatDate(comment.createdUtc)}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
 
             <form
               onSubmit={handleCommentSubmit}
@@ -484,7 +566,11 @@ export function AdminIncidentDetailPage() {
                   id="commentText"
                   value={commentText}
                   onChange={(event) => setCommentText(event.target.value)}
-                  style={{ ...styles.field, minHeight: "110px", resize: "vertical" }}
+                  style={{
+                    ...styles.field,
+                    minHeight: "110px",
+                    resize: "vertical",
+                  }}
                   placeholder="Write an internal admin comment..."
                 />
               </div>
@@ -597,7 +683,7 @@ function Meta({
 }: {
   label: string;
   value?: string;
-  children?: React.ReactNode;
+  children?: ReactNode;
 }) {
   return (
     <div style={styles.metaItem}>

@@ -3,7 +3,7 @@ set -euo pipefail
 
 RESOURCE_GROUP="rg-ssip-dev-frc-01"
 FUNCTION_APP="func-ssip-dev-frc-01"
-ZIP_NAME="built.zip"
+ZIP_NAME="backend.zip"
 DEPLOY_DIR="deploy_pkg"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -36,13 +36,13 @@ cd "${DEPLOY_DIR}"
 npm install --omit=dev
 cd ..
 
-echo "Creating ZIP with Linux-compatible paths..."
+echo "Creating ZIP (for linux)..."
 python - <<'PY'
 import os
 import zipfile
 
 source = "deploy_pkg"
-out = "built.zip"
+out = "backend.zip"
 
 with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
     for root, dirs, files in os.walk(source):
@@ -67,7 +67,7 @@ required = [
     "node_modules/mssql/package.json",
 ]
 
-with zipfile.ZipFile("built.zip") as z:
+with zipfile.ZipFile("backend.zip") as z:
     names = set(z.namelist())
 
 missing = []
@@ -90,12 +90,12 @@ echo ""
 echo "API package created successfully:"
 echo "${API_DIR}/${ZIP_NAME}"
 echo ""
-echo "Upload built.zip to Azure Cloud Shell, then run:"
+echo "Upload backend.zip to Azure Cloud Shell, then run:"
 echo ""
 echo "az functionapp deployment source config-zip \\"
 echo "  --resource-group ${RESOURCE_GROUP} \\"
 echo "  --name ${FUNCTION_APP} \\"
-echo "  --src ./built.zip"
+echo "  --src ./backend.zip"
 echo ""
 echo "Then verify:"
 echo ""

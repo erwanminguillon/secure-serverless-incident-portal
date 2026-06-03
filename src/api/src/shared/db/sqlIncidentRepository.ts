@@ -465,11 +465,15 @@ export async function addIncidentComment(
     createdUtc: now.toISOString(),
   };
 }
-
 export async function listIncidentComments(
   incidentId: string
 ): Promise<{ items: IncidentComment[] }> {
   const pool = await getSqlPool();
+
+  const incident = await getIncidentById(incidentId);
+  if (!incident) {
+    return { items: [] };
+  }
 
   const result = await pool
     .request()
@@ -492,6 +496,7 @@ export async function listIncidentComments(
     items: result.recordset.map(mapIncidentComment),
   };
 }
+
 
 /* ========================= EVIDENCE STUBS ========================= */
 

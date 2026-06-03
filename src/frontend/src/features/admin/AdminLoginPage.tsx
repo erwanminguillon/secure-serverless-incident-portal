@@ -2,7 +2,8 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { setAdminSession } from "./adminSession";
+import { adminLogin, getAdminMe } from "../../api/adminApi";
+import { clearAdminSession, setAdminSession } from "./adminSession";
 
 export function AdminLoginPage() {
   const navigate = useNavigate();
@@ -10,19 +11,41 @@ export function AdminLoginPage() {
   const [adminKey, setAdminKey] = useState("");
   const [adminName, setAdminName] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     setError("");
+    clearAdminSession();
 
     if (!adminKey.trim()) {
       setError("Admin key is required.");
       return;
     }
 
-    setAdminSession(adminKey.trim(), adminName.trim() || "Admin");
-    navigate("/admin/incidents");
+    try {
+      setLoading(true);
+
+      await adminLogin(adminKey.trim(), adminName.trim() || "Admin");
+
+      const identity = await getAdminMe();
+
+      setAdminSession(identity.principalName);
+      setAdminKey("");
+
+      navigate("/admin/incidents");
+    } catch (err) {
+      clearAdminSession();
+
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Admin login failed.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -60,7 +83,7 @@ export function AdminLoginPage() {
           <h2
             style={{
               margin: "10px 0 14px",
-              color: "#001E3B",
+              color: "#001e3b",
               fontSize: "34px",
               lineHeight: 1.08,
               letterSpacing: "-0.04em",
@@ -72,7 +95,7 @@ export function AdminLoginPage() {
           <p
             style={{
               margin: 0,
-              color: "#53657A",
+              color: "#53657a",
               fontSize: "15px",
               lineHeight: 1.65,
               maxWidth: "720px",
@@ -92,16 +115,16 @@ export function AdminLoginPage() {
             }}
           >
             <InfoTile
-              title="Protected API"
-              text="Admin endpoints require a valid administrator key."
+              title="HttpOnly session"
+              text="After login, the admin key is exchanged for a backend session cookie."
             />
             <InfoTile
-              title="Session scoped"
-              text="The key is kept only in browser session storage."
+              title="Server verified"
+              text="The dashboard opens only after a session confirmation."
             />
             <InfoTile
-              title="SOC workflow"
-              text="Triage, investigate, resolve, close, or reject incidents."
+              title="No key storage"
+              text="The plaintext admin key is not stored in browser sessionStorage."
             />
           </div>
         </div>
@@ -132,26 +155,13 @@ export function AdminLoginPage() {
           <h3
             style={{
               margin: "8px 0 8px",
-              color: "#001E3B",
+              color: "#001e3b",
               fontSize: "26px",
               letterSpacing: "-0.03em",
             }}
           >
             Administrator access
           </h3>
-
-          <p
-            style={{
-              margin: "0 0 22px",
-              color: "#53657A",
-              fontSize: "14px",
-              lineHeight: 1.55,
-            }}
-          >
-            Enter your admin key to continue. The key is not baked into the
-            frontend and is cleared when the browser session ends or when you
-            log out.
-          </p>
 
           {error && (
             <div
@@ -172,11 +182,8 @@ export function AdminLoginPage() {
                 className="ssip-field"
                 value={adminName}
                 onChange={(event) => setAdminName(event.target.value)}
-                placeholder="Admin display name"
+                placeholder="Display name"
               />
-              <p className="ssip-help-text" style={{ margin: "6px 0 0" }}>
-                This name is used when creating internal comments.
-              </p>
             </div>
 
             <div>
@@ -189,17 +196,14 @@ export function AdminLoginPage() {
                 type="password"
                 value={adminKey}
                 onChange={(event) => setAdminKey(event.target.value)}
-                placeholder="Paste admin key"
+                placeholder="Key"
                 autoComplete="off"
               />
-              <p className="ssip-help-text" style={{ margin: "6px 0 0" }}>
-                The backend validates this key against the configured admin key
-                hash.
-              </p>
             </div>
 
             <button
               type="submit"
+              disabled={loading}
               className="ssip-button ssip-button-primary"
               style={{
                 width: "100%",
@@ -207,24 +211,8 @@ export function AdminLoginPage() {
                 padding: "11px 14px",
               }}
             >
-              Continue to dashboard
+              {loading ? "Signing in..." : "Continue to dashboard"}
             </button>
-          </div>
-
-          <div
-            style={{
-              marginTop: "20px",
-              border: "1px solid var(--ssip-border)",
-              borderRadius: "10px",
-              background: "#f8fbfe",
-              color: "#004578",
-              padding: "14px",
-              fontSize: "13px",
-              lineHeight: 1.5,
-            }}
-          >
-            If access fails, verify that the admin key matches the Azure
-            Function App setting <code>ADMIN_SHARED_KEY_HASH</code>.
           </div>
         </form>
       </div>
@@ -242,19 +230,13 @@ function InfoTile({ title, text }: { title: string; text: string }) {
         padding: "16px",
       }}
     >
-      <h4
-        style={{
-          margin: "0 0 6px",
-          color: "#001E3B",
-          fontSize: "15px",
-        }}
-      >
+      <h4 style={{ margin: "0 0 6px", color: "#001e3b", fontSize: "15px" }}>
         {title}
       </h4>
       <p
         style={{
           margin: 0,
-          color: "#53657A",
+          color: "#53657a",
           fontSize: "13px",
           lineHeight: 1.45,
         }}

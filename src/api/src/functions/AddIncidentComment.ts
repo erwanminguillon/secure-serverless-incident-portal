@@ -9,10 +9,7 @@ import type { AddIncidentCommentRequest } from "../shared/models/IncidentComment
 import { createApiError } from "../shared/models/ApiErrors";
 
 import { getCorrelationId } from "../shared/utils/correlation";
-import {
-  getAuthenticatedAdminIdentity,
-  isAuthenticatedAdmin,
-} from "../shared/utils/adminAuth";
+import { getAuthenticatedAdminIdentityAsync } from "../shared/auth/adminAuth";
 import { addIncidentComment as addIncidentCommentInRepo } from "../shared/db/sqlIncidentRepository";
 
 export async function addIncidentComment(
@@ -22,18 +19,7 @@ export async function addIncidentComment(
   const correlationId = getCorrelationId(request);
 
   try {
-    if (!isAuthenticatedAdmin(request)) {
-      return {
-        status: 401,
-        jsonBody: createApiError(
-          "UNAUTHORIZED",
-          "Authentication is required.",
-          correlationId
-        ),
-      };
-    }
-
-    const adminIdentity = getAuthenticatedAdminIdentity(request);
+    const adminIdentity = await getAuthenticatedAdminIdentityAsync(request);
 
     if (!adminIdentity) {
       return {
@@ -43,10 +29,14 @@ export async function addIncidentComment(
           "Authentication is required.",
           correlationId
         ),
+        headers: {
+          "x-correlation-id": correlationId,
+        },
       };
     }
 
     const incidentId = request.params.incidentId;
+
     if (!incidentId) {
       return {
         status: 400,
@@ -56,6 +46,9 @@ export async function addIncidentComment(
           correlationId,
           [{ field: "incidentId", message: "incidentId is required." }]
         ),
+        headers: {
+          "x-correlation-id": correlationId,
+        },
       };
     }
 
@@ -70,16 +63,18 @@ export async function addIncidentComment(
           correlationId,
           [{ field: "commentText", message: "commentText is required." }]
         ),
+        headers: {
+          "x-correlation-id": correlationId,
+        },
       };
     }
 
-  const response = await addIncidentCommentInRepo(
-    incidentId,
-    body.commentText.trim(),
-    adminIdentity.principalId,
-    adminIdentity.principalName
-  );
-
+    const response = await addIncidentCommentInRepo(
+      incidentId,
+      body.commentText.trim(),
+      adminIdentity.principalId,
+      adminIdentity.principalName
+    );
 
     if (!response) {
       return {
@@ -89,6 +84,9 @@ export async function addIncidentComment(
           "Incident not found.",
           correlationId
         ),
+        headers: {
+          "x-correlation-id": correlationId,
+        },
       };
     }
 
@@ -109,6 +107,9 @@ export async function addIncidentComment(
         "An unexpected error occurred.",
         correlationId
       ),
+      headers: {
+        "x-correlation-id": correlationId,
+      },
     };
   }
 }

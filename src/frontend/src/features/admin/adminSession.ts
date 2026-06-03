@@ -1,25 +1,24 @@
-const ADMIN_KEY_STORAGE_KEY = "ssip.adminKey";
 const ADMIN_NAME_STORAGE_KEY = "ssip.adminName";
+const ADMIN_AUTHENTICATED_STORAGE_KEY = "ssip.adminAuthenticated";
 
-export function setAdminSession(adminKey: string, adminName: string): void {
-  sessionStorage.setItem(ADMIN_KEY_STORAGE_KEY, adminKey);
+export function setAdminSession(adminName: string): void {
   sessionStorage.setItem(ADMIN_NAME_STORAGE_KEY, adminName || "Admin");
-}
-
-export function getAdminKey(): string | null {
-  return sessionStorage.getItem(ADMIN_KEY_STORAGE_KEY);
+  sessionStorage.setItem(ADMIN_AUTHENTICATED_STORAGE_KEY, "true");
 }
 
 export function getAdminName(): string {
   return sessionStorage.getItem(ADMIN_NAME_STORAGE_KEY) || "Admin";
 }
 
-export function isAdminAuthenticated(): boolean {
-  const adminKey = getAdminKey();
-  return !!adminKey && adminKey.trim().length > 0;
+export function markAdminUnauthenticated(): void {
+  sessionStorage.removeItem(ADMIN_AUTHENTICATED_STORAGE_KEY);
+}
+
+export function isAdminAuthenticatedHint(): boolean {
+  return sessionStorage.getItem(ADMIN_AUTHENTICATED_STORAGE_KEY) === "true";
 }
 
 export function clearAdminSession(): void {
-  sessionStorage.removeItem(ADMIN_KEY_STORAGE_KEY);
   sessionStorage.removeItem(ADMIN_NAME_STORAGE_KEY);
+  sessionStorage.removeItem(ADMIN_AUTHENTICATED_STORAGE_KEY);
 }

@@ -5,22 +5,21 @@ import {
   InvocationContext,
 } from "@azure/functions";
 
-import type { ReferenceDataResponse } from "../shared/models/ReferenceData";
 import { createApiError } from "../shared/models/ApiErrors";
-
 import { getCorrelationId } from "../shared/utils/correlation";
-import { isAuthenticatedAdminAsync } from "../shared/auth/adminAuth";
-import { getReferenceData as getReferenceDataFromRepo } from "../shared/db/mockReferenceDataRepository";
+import { getAuthenticatedAdminIdentityAsync } from "../shared/auth/adminAuth";
 
 
-export async function getReferenceData(
+export async function getAdminMe(
   request: HttpRequest,
   context: InvocationContext
 ): Promise<HttpResponseInit> {
   const correlationId = getCorrelationId(request);
 
   try {
-    if (!isAuthenticatedAdminAsync(request)) {
+    const identity = await getAuthenticatedAdminIdentityAsync(request);
+
+    if (!identity) {
       return {
         status: 401,
         jsonBody: createApiError(
@@ -28,20 +27,27 @@ export async function getReferenceData(
           "Authentication is required.",
           correlationId
         ),
+        headers: {
+          "x-correlation-id": correlationId,
+        },
       };
     }
 
-    const response = await getReferenceDataFromRepo();
-
     return {
-    status: 200,
-    jsonBody: response,
-    headers: {
+      status: 200,
+      jsonBody: {
+        principalId: identity.principalId,
+        principalName: identity.principalName,
+        identityProvider: identity.identityProvider,
+        sessionId: identity.sessionId ?? null,
+        expiresUtc: identity.expiresUtc ?? null,
+      },
+      headers: {
         "x-correlation-id": correlationId,
-    },
+      },
     };
   } catch (error) {
-    context.error("GetReferenceData failed", error);
+    context.error("GetAdminMe failed", error);
 
     return {
       status: 500,
@@ -50,13 +56,16 @@ export async function getReferenceData(
         "An unexpected error occurred.",
         correlationId
       ),
+      headers: {
+        "x-correlation-id": correlationId,
+      },
     };
   }
 }
 
-app.http("GetReferenceData", {
+app.http("GetAdminMe", {
   methods: ["GET"],
   authLevel: "anonymous",
-  route: "internal/reference-data",
-  handler: getReferenceData,
+  route: "internal/auth/me",
+  handler: getAdminMe,
 });

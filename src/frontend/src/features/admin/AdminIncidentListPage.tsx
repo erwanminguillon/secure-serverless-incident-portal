@@ -2,10 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { listIncidents, updateIncident } from "../../api/adminApi";
+import {
+  adminLogout,
+  getAdminMe,
+  listIncidents,
+  updateIncident,
+} from "../../api/adminApi";
 import type { IncidentListItem } from "../../api/adminApi";
 
-import { clearAdminSession, isAdminAuthenticated } from "./adminSession";
+import { clearAdminSession, setAdminSession } from "./adminSession";
 
 type StatusFilter =
   | "all"
@@ -21,9 +26,8 @@ type SeverityFilter = "all" | "low" | "medium" | "high" | "critical";
 const styles: Record<string, CSSProperties> = {
   page: {
     minHeight: "100vh",
-    background:
-      "linear-gradient(135deg, #ffffff 0%, #D8EBFF 55%, #89C4FF 100%)",
-    color: "#001E3B",
+    background: "#f3f8fd",
+    color: "#001e3b",
     padding: "24px",
     borderRadius: "16px",
   },
@@ -40,7 +44,7 @@ const styles: Record<string, CSSProperties> = {
   },
   eyebrow: {
     margin: 0,
-    color: "#0080FF",
+    color: "#0078d4",
     fontSize: "12px",
     fontWeight: 800,
     letterSpacing: "0.12em",
@@ -50,11 +54,11 @@ const styles: Record<string, CSSProperties> = {
     margin: "6px 0 4px",
     fontSize: "30px",
     lineHeight: 1.15,
-    color: "#001E3B",
+    color: "#001e3b",
   },
   subtitle: {
     margin: 0,
-    color: "#004589",
+    color: "#53657a",
     fontSize: "14px",
   },
   headerActions: {
@@ -63,30 +67,20 @@ const styles: Record<string, CSSProperties> = {
     alignItems: "center",
   },
   button: {
-    border: "1px solid #89C4FF",
-    background: "#FFFFFF",
-    color: "#004589",
-    borderRadius: "10px",
-    padding: "9px 12px",
-    fontSize: "13px",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  primaryButton: {
-    border: "1px solid #0080FF",
-    background: "#0080FF",
-    color: "#FFFFFF",
-    borderRadius: "10px",
+    border: "1px solid #c7e0f4",
+    background: "#ffffff",
+    color: "#004578",
+    borderRadius: "8px",
     padding: "9px 12px",
     fontSize: "13px",
     fontWeight: 700,
     cursor: "pointer",
   },
   dangerButton: {
-    border: "1px solid #FECACA",
-    background: "#FFFFFF",
-    color: "#B91C1C",
-    borderRadius: "10px",
+    border: "1px solid #fecaca",
+    background: "#ffffff",
+    color: "#b91c1c",
+    borderRadius: "8px",
     padding: "9px 12px",
     fontSize: "13px",
     fontWeight: 700,
@@ -99,15 +93,15 @@ const styles: Record<string, CSSProperties> = {
     marginBottom: "18px",
   },
   card: {
-    background: "#FFFFFF",
-    border: "1px solid #89C4FF",
-    borderRadius: "16px",
+    background: "#ffffff",
+    border: "1px solid #c7e0f4",
+    borderRadius: "14px",
     padding: "16px",
-    boxShadow: "0 8px 24px rgba(0, 69, 137, 0.12)",
+    boxShadow: "0 8px 24px rgba(0, 69, 120, 0.08)",
   },
   kpiLabel: {
     margin: 0,
-    color: "#004589",
+    color: "#004578",
     fontSize: "12px",
     textTransform: "uppercase",
     letterSpacing: "0.08em",
@@ -115,7 +109,7 @@ const styles: Record<string, CSSProperties> = {
   },
   kpiValue: {
     margin: "8px 0 0",
-    color: "#001E3B",
+    color: "#001e3b",
     fontSize: "28px",
     fontWeight: 800,
   },
@@ -128,19 +122,19 @@ const styles: Record<string, CSSProperties> = {
   input: {
     width: "100%",
     boxSizing: "border-box",
-    border: "1px solid #89C4FF",
-    background: "#FFFFFF",
-    color: "#001E3B",
-    borderRadius: "10px",
+    border: "1px solid #c7e0f4",
+    background: "#ffffff",
+    color: "#001e3b",
+    borderRadius: "8px",
     padding: "10px 12px",
     fontSize: "14px",
   },
   panel: {
-    background: "#FFFFFF",
-    border: "1px solid #89C4FF",
-    borderRadius: "16px",
+    background: "#ffffff",
+    border: "1px solid #c7e0f4",
+    borderRadius: "14px",
     overflow: "hidden",
-    boxShadow: "0 8px 24px rgba(0, 69, 137, 0.12)",
+    boxShadow: "0 8px 24px rgba(0, 69, 120, 0.08)",
   },
   tableWrapper: {
     overflowX: "auto",
@@ -153,10 +147,10 @@ const styles: Record<string, CSSProperties> = {
   },
   th: {
     textAlign: "left",
-    color: "#FFFFFF",
-    background: "#004589",
+    color: "#ffffff",
+    background: "#004578",
     padding: "12px",
-    borderBottom: "1px solid #89C4FF",
+    borderBottom: "1px solid #c7e0f4",
     fontWeight: 800,
     textTransform: "uppercase",
     letterSpacing: "0.06em",
@@ -165,38 +159,38 @@ const styles: Record<string, CSSProperties> = {
   },
   td: {
     padding: "13px 12px",
-    borderBottom: "1px solid #D8EBFF",
-    color: "#001E3B",
+    borderBottom: "1px solid #e5f1fb",
+    color: "#001e3b",
     verticalAlign: "top",
   },
   link: {
-    color: "#0080FF",
+    color: "#0078d4",
     textDecoration: "none",
     fontWeight: 800,
   },
   error: {
-    background: "#FEE2E2",
-    border: "1px solid #FECACA",
-    color: "#991B1B",
-    borderRadius: "14px",
+    background: "#fee2e2",
+    border: "1px solid #fecaca",
+    color: "#991b1b",
+    borderRadius: "10px",
     padding: "14px",
     marginBottom: "16px",
     fontSize: "14px",
   },
   success: {
-    background: "#DCFCE7",
-    border: "1px solid #BBF7D0",
+    background: "#dcfce7",
+    border: "1px solid #bbf7d0",
     color: "#166534",
-    borderRadius: "14px",
+    borderRadius: "10px",
     padding: "14px",
     marginBottom: "16px",
     fontSize: "14px",
   },
   info: {
-    background: "#D8EBFF",
-    border: "1px solid #89C4FF",
-    color: "#004589",
-    borderRadius: "14px",
+    background: "#e5f1fb",
+    border: "1px solid #c7e0f4",
+    color: "#004578",
+    borderRadius: "10px",
     padding: "14px",
     marginBottom: "16px",
     fontSize: "14px",
@@ -207,9 +201,9 @@ const styles: Record<string, CSSProperties> = {
     gap: "6px",
   },
   actionButton: {
-    border: "1px solid #89C4FF",
-    background: "#FFFFFF",
-    color: "#004589",
+    border: "1px solid #c7e0f4",
+    background: "#ffffff",
+    color: "#004578",
     borderRadius: "999px",
     padding: "6px 9px",
     fontSize: "12px",
@@ -217,9 +211,9 @@ const styles: Record<string, CSSProperties> = {
     cursor: "pointer",
   },
   rejectActionButton: {
-    border: "1px solid #FECACA",
-    background: "#FEF2F2",
-    color: "#B91C1C",
+    border: "1px solid #fecaca",
+    background: "#fef2f2",
+    color: "#b91c1c",
     borderRadius: "999px",
     padding: "6px 9px",
     fontSize: "12px",
@@ -234,8 +228,8 @@ const styles: Record<string, CSSProperties> = {
 
 function optionStyle(): CSSProperties {
   return {
-    color: "#001E3B",
-    backgroundColor: "#FFFFFF",
+    color: "#001e3b",
+    backgroundColor: "#ffffff",
   };
 }
 
@@ -257,93 +251,33 @@ function badgeStyle(kind: "status" | "severity", value: string | null): CSSPrope
   if (kind === "severity") {
     switch (safeValue) {
       case "critical":
-        return {
-          ...base,
-          background: "#FEE2E2",
-          color: "#991B1B",
-          borderColor: "#FECACA",
-        };
+        return { ...base, background: "#fee2e2", color: "#991b1b", borderColor: "#fecaca" };
       case "high":
-        return {
-          ...base,
-          background: "#FFEDD5",
-          color: "#9A3412",
-          borderColor: "#FED7AA",
-        };
+        return { ...base, background: "#ffedd5", color: "#9a3412", borderColor: "#fed7aa" };
       case "medium":
-        return {
-          ...base,
-          background: "#FEF3C7",
-          color: "#92400E",
-          borderColor: "#FDE68A",
-        };
+        return { ...base, background: "#fef3c7", color: "#92400e", borderColor: "#fde68a" };
       case "low":
-        return {
-          ...base,
-          background: "#DCFCE7",
-          color: "#166534",
-          borderColor: "#BBF7D0",
-        };
+        return { ...base, background: "#dcfce7", color: "#166534", borderColor: "#bbf7d0" };
       default:
-        return {
-          ...base,
-          background: "#EEF6FF",
-          color: "#004589",
-          borderColor: "#89C4FF",
-        };
+        return { ...base, background: "#f3f8fd", color: "#004578", borderColor: "#c7e0f4" };
     }
   }
 
   switch (safeValue) {
     case "submitted":
-      return {
-        ...base,
-        background: "#EEF6FF",
-        color: "#004589",
-        borderColor: "#89C4FF",
-      };
+      return { ...base, background: "#f3f8fd", color: "#004578", borderColor: "#c7e0f4" };
     case "triage":
-      return {
-        ...base,
-        background: "#D8EBFF",
-        color: "#004589",
-        borderColor: "#89C4FF",
-      };
+      return { ...base, background: "#e5f1fb", color: "#004578", borderColor: "#c7e0f4" };
     case "investigating":
-      return {
-        ...base,
-        background: "#EDE9FE",
-        color: "#6D28D9",
-        borderColor: "#DDD6FE",
-      };
+      return { ...base, background: "#ede9fe", color: "#6d28d9", borderColor: "#ddd6fe" };
     case "resolved":
-      return {
-        ...base,
-        background: "#DCFCE7",
-        color: "#166534",
-        borderColor: "#BBF7D0",
-      };
+      return { ...base, background: "#dcfce7", color: "#166534", borderColor: "#bbf7d0" };
     case "closed":
-      return {
-        ...base,
-        background: "#E5E7EB",
-        color: "#374151",
-        borderColor: "#D1D5DB",
-      };
+      return { ...base, background: "#e5e7eb", color: "#374151", borderColor: "#d1d5db" };
     case "rejected":
-      return {
-        ...base,
-        background: "#FEE2E2",
-        color: "#991B1B",
-        borderColor: "#FECACA",
-      };
+      return { ...base, background: "#fee2e2", color: "#991b1b", borderColor: "#fecaca" };
     default:
-      return {
-        ...base,
-        background: "#EEF6FF",
-        color: "#004589",
-        borderColor: "#89C4FF",
-      };
+      return { ...base, background: "#f3f8fd", color: "#004578", borderColor: "#c7e0f4" };
   }
 }
 
@@ -373,6 +307,8 @@ export function AdminIncidentListPage() {
   const [items, setItems] = useState<IncidentListItem[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadStartedAt, setLoadStartedAt] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [actionIncidentId, setActionIncidentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -385,7 +321,11 @@ export function AdminIncidentListPage() {
   async function loadIncidents() {
     try {
       setLoading(true);
+      setLoadStartedAt(Date.now());
       setError(null);
+
+      const identity = await getAdminMe();
+      setAdminSession(identity.principalName);
 
       const response = await listIncidents();
 
@@ -395,6 +335,7 @@ export function AdminIncidentListPage() {
       handleApiError(err);
     } finally {
       setLoading(false);
+      setLoadStartedAt(null);
     }
   }
 
@@ -420,13 +361,21 @@ export function AdminIncidentListPage() {
   }
 
   useEffect(() => {
-    if (!isAdminAuthenticated()) {
-      navigate("/admin");
+    loadIncidents();
+  }, []);
+
+  useEffect(() => {
+    if (!loading || loadStartedAt === null) {
+      setElapsedSeconds(0);
       return;
     }
 
-    loadIncidents();
-  }, []);
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - loadStartedAt) / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [loading, loadStartedAt]);
 
   const categories = useMemo(() => {
     return Array.from(
@@ -455,8 +404,7 @@ export function AdminIncidentListPage() {
         .toLowerCase();
 
       const matchesSearch =
-        normalizedSearch.length === 0 ||
-        searchableText.includes(normalizedSearch);
+        normalizedSearch.length === 0 || searchableText.includes(normalizedSearch);
 
       const matchesStatus =
         statusFilter === "all" || incident.statusCode === statusFilter;
@@ -478,15 +426,17 @@ export function AdminIncidentListPage() {
       critical: items.filter((item) => item.severityCode === "critical").length,
       high: items.filter((item) => item.severityCode === "high").length,
       triage: items.filter((item) => item.statusCode === "triage").length,
-      investigating: items.filter(
-        (item) => item.statusCode === "investigating"
-      ).length,
+      investigating: items.filter((item) => item.statusCode === "investigating").length,
     };
   }, [items]);
 
-  function handleLogout() {
-    clearAdminSession();
-    navigate("/admin");
+  async function handleLogout() {
+    try {
+      await adminLogout();
+    } finally {
+      clearAdminSession();
+      navigate("/admin");
+    }
   }
 
   function isActionRunning(incidentId: string): boolean {
@@ -521,8 +471,7 @@ export function AdminIncidentListPage() {
             <p style={styles.eyebrow}>SSIP SOC Console</p>
             <h2 style={styles.title}>Admin Incident Dashboard</h2>
             <p style={styles.subtitle}>
-              Monitor, triage, investigate, resolve, and reject submitted
-              incidents.
+              Monitor, triage, investigate, resolve, and reject submitted incidents.
             </p>
           </div>
 
@@ -538,11 +487,20 @@ export function AdminIncidentListPage() {
 
         {error && <div style={styles.error}>{error}</div>}
 
-        {successMessage && (
-          <div style={styles.success}>{successMessage}</div>
-        )}
+        {successMessage && <div style={styles.success}>{successMessage}</div>}
 
-        {loading && <div style={styles.info}>Loading incidents...</div>}
+        {loading && (
+          <div style={styles.info}>
+            <strong>Loading incidents...</strong>
+            <p style={{ margin: "8px 0 0", lineHeight: 1.5 }}>
+              The first request can take up to 60 seconds while Azure starts the
+              serverless backend and database. Please keep this page open.
+            </p>
+            <p style={{ margin: "8px 0 0", fontWeight: 800 }}>
+              Elapsed: {elapsedSeconds}s
+            </p>
+          </div>
+        )}
 
         <section style={styles.kpiGrid}>
           <KpiCard label="Total incidents" value={metrics.total} />
@@ -569,27 +527,13 @@ export function AdminIncidentListPage() {
                 setStatusFilter(event.target.value as StatusFilter)
               }
             >
-              <option style={optionStyle()} value="all">
-                All statuses
-              </option>
-              <option style={optionStyle()} value="submitted">
-                Submitted
-              </option>
-              <option style={optionStyle()} value="triage">
-                Triage
-              </option>
-              <option style={optionStyle()} value="investigating">
-                Investigating
-              </option>
-              <option style={optionStyle()} value="resolved">
-                Resolved
-              </option>
-              <option style={optionStyle()} value="closed">
-                Closed
-              </option>
-              <option style={optionStyle()} value="rejected">
-                Rejected
-              </option>
+              <option style={optionStyle()} value="all">All statuses</option>
+              <option style={optionStyle()} value="submitted">Submitted</option>
+              <option style={optionStyle()} value="triage">Triage</option>
+              <option style={optionStyle()} value="investigating">Investigating</option>
+              <option style={optionStyle()} value="resolved">Resolved</option>
+              <option style={optionStyle()} value="closed">Closed</option>
+              <option style={optionStyle()} value="rejected">Rejected</option>
             </select>
 
             <select
@@ -599,21 +543,11 @@ export function AdminIncidentListPage() {
                 setSeverityFilter(event.target.value as SeverityFilter)
               }
             >
-              <option style={optionStyle()} value="all">
-                All severities
-              </option>
-              <option style={optionStyle()} value="low">
-                Low
-              </option>
-              <option style={optionStyle()} value="medium">
-                Medium
-              </option>
-              <option style={optionStyle()} value="high">
-                High
-              </option>
-              <option style={optionStyle()} value="critical">
-                Critical
-              </option>
+              <option style={optionStyle()} value="all">All severities</option>
+              <option style={optionStyle()} value="low">Low</option>
+              <option style={optionStyle()} value="medium">Medium</option>
+              <option style={optionStyle()} value="high">High</option>
+              <option style={optionStyle()} value="critical">Critical</option>
             </select>
 
             <select
@@ -621,9 +555,7 @@ export function AdminIncidentListPage() {
               value={categoryFilter}
               onChange={(event) => setCategoryFilter(event.target.value)}
             >
-              <option style={optionStyle()} value="all">
-                All categories
-              </option>
+              <option style={optionStyle()} value="all">All categories</option>
               {categories.map((category) => (
                 <option style={optionStyle()} key={category} value={category}>
                   {formatCode(category)}
@@ -632,7 +564,7 @@ export function AdminIncidentListPage() {
             </select>
           </div>
 
-          <p style={{ margin: 0, color: "#004589", fontSize: "13px" }}>
+          <p style={{ margin: 0, color: "#004578", fontSize: "13px" }}>
             Showing {filteredItems.length} of {totalCount} incident
             {totalCount === 1 ? "" : "s"}.
           </p>
@@ -666,7 +598,7 @@ export function AdminIncidentListPage() {
                       </Link>
                       <div
                         style={{
-                          color: "#001E3B",
+                          color: "#001e3b",
                           marginTop: "4px",
                           fontWeight: 700,
                         }}
@@ -675,18 +607,11 @@ export function AdminIncidentListPage() {
                       </div>
                     </td>
 
-                    <td style={styles.td}>
-                      {formatCode(incident.reportTypeCode)}
-                    </td>
+                    <td style={styles.td}>{formatCode(incident.reportTypeCode)}</td>
+                    <td style={styles.td}>{formatCode(incident.categoryCode)}</td>
 
                     <td style={styles.td}>
-                      {formatCode(incident.categoryCode)}
-                    </td>
-
-                    <td style={styles.td}>
-                      <span
-                        style={badgeStyle("severity", incident.severityCode)}
-                      >
+                      <span style={badgeStyle("severity", incident.severityCode)}>
                         {formatCode(incident.severityCode)}
                       </span>
                     </td>
@@ -697,9 +622,7 @@ export function AdminIncidentListPage() {
                       </span>
                     </td>
 
-                    <td style={styles.td}>
-                      {formatDate(incident.submittedUtc)}
-                    </td>
+                    <td style={styles.td}>{formatDate(incident.submittedUtc)}</td>
 
                     <td style={styles.td}>
                       {incident.assignedReviewerDisplayName ?? "Unassigned"}
@@ -716,10 +639,7 @@ export function AdminIncidentListPage() {
                           }}
                           disabled={isActionRunning(incident.incidentId)}
                           onClick={() =>
-                            handleQuickStatusChange(
-                              incident.incidentId,
-                              "triage"
-                            )
+                            handleQuickStatusChange(incident.incidentId, "triage")
                           }
                         >
                           {isActionRunning(incident.incidentId)
@@ -754,10 +674,7 @@ export function AdminIncidentListPage() {
                           }}
                           disabled={isActionRunning(incident.incidentId)}
                           onClick={() =>
-                            handleQuickStatusChange(
-                              incident.incidentId,
-                              "resolved"
-                            )
+                            handleQuickStatusChange(incident.incidentId, "resolved")
                           }
                         >
                           Resolve
@@ -772,10 +689,7 @@ export function AdminIncidentListPage() {
                           }}
                           disabled={isActionRunning(incident.incidentId)}
                           onClick={() =>
-                            handleQuickStatusChange(
-                              incident.incidentId,
-                              "closed"
-                            )
+                            handleQuickStatusChange(incident.incidentId, "closed")
                           }
                         >
                           Close
@@ -790,10 +704,7 @@ export function AdminIncidentListPage() {
                           }}
                           disabled={isActionRunning(incident.incidentId)}
                           onClick={() =>
-                            handleQuickStatusChange(
-                              incident.incidentId,
-                              "rejected"
-                            )
+                            handleQuickStatusChange(incident.incidentId, "rejected")
                           }
                         >
                           Reject
@@ -807,7 +718,7 @@ export function AdminIncidentListPage() {
           </div>
 
           {!loading && filteredItems.length === 0 && (
-            <div style={{ padding: "22px", color: "#004589" }}>
+            <div style={{ padding: "22px", color: "#004578" }}>
               No incidents match the current filters.
             </div>
           )}
