@@ -23,7 +23,7 @@ I suggest having a look at the docs/images folders as it contains pictures of th
 - #deployment-overview
 - #admin-key-rotation
 - #current-status
-- #why-anyone-should-care
+- ## why-anyone-should-care
 
 ---
 
