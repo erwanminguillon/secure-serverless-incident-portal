@@ -6,6 +6,8 @@ I built this project to explore what a realistic, security-focused serverless ap
 
 The project is intentionally designed around practical security and cloud engineering concerns: hashed tracking tokens, admin session cookies, Azure Functions, Azure SQL, CORS, deployment packaging, operational scripts, and a frontend that separates public workflows from internal SOC-style workflows.
 
+I suggest having a look at the docs/images folders as it contains pictures of the Azure portal and the frontend itself.
+
 ---
 
 ## Why this project exists
