@@ -12,18 +12,18 @@ I suggest having a look at the docs/images folders as it contains pictures of th
 
 ## Table of contents
 
-- #why-this-project-exists
-- #what-the-application-does
-- #screenshots
-- #what-makes-it-interesting
-- #current-architecture
-- #security-model
-- #main-features
-- #tech-stack
-- #deployment-overview
-- #admin-key-rotation
-- #current-status
-- # why-anyone-should-care
+- why-this-project-exists
+- what-the-application-does
+- screenshots
+- what-makes-it-interesting
+- current-architecture
+- security-model
+- main-features
+- tech-stack
+- deployment-overview
+- admin-key-rotation
+- current-status
+- why-anyone-should-care
 
 ---
 
