@@ -18,7 +18,7 @@ A useful reporting portal needs to handle questions like:
 
 - How can someone submit an incident without needing an account?
 - How can that same person track the report later without exposing internal data?
-- How should administrators authenticate without putting secrets in the frontend?
+- How should administrators authenticate securely?
 - How should internal comments and reviewer assignments be separated from public tracking?
 - How can the system stay cheap to run while still being cloud-native?
 - How can the whole environment be rebuilt if the Azure resources disappear?
