@@ -10,6 +10,23 @@ I suggest having a look at the docs/images folders as it contains pictures of th
 
 ---
 
+## Table of contents
+
+- #why-this-project-exists
+- #what-the-application-does
+- #screenshots
+- #what-makes-it-interesting
+- #current-architecture
+- #security-model
+- #main-features
+- #tech-stack
+- #deployment-overview
+- #admin-key-rotation
+- #current-status
+- #why-anyone-should-care
+
+---
+
 ## Why this project exists
 
 Security incident reporting is one of those workflows that looks simple from the outside but becomes more interesting once real-world constraints are considered.
@@ -61,7 +78,9 @@ Administrators can:
 The admin interface is designed to feel closer to a lightweight SOC console than a default web form.
 
 ---
+## Screenshots
 
+---
 ## What makes it interesting
 
 This project is not only about building forms and tables. The important part is the security and infrastructure work behind those forms.
