@@ -124,7 +124,7 @@ export function AdminLoginPage() {
             />
             <InfoTile
               title="No key storage"
-              text="The plaintext admin key is not stored in browser sessionStorage."
+              text="The plaintext admin key is not stored in browser."
             />
           </div>
         </div>
