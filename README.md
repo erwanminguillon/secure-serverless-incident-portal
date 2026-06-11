@@ -251,7 +251,7 @@ This keeps sensitive tokens out of the database in plaintext form.
 - Node.js
 - TypeScript
 - Azure SQL
-- `mssql`
+- mssql
 - Application settings for secrets/configuration
 
 ### Infrastructure and operations
