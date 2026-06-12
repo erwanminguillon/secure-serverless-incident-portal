@@ -79,7 +79,8 @@ The admin interface is designed to feel closer to a lightweight SOC console than
 
 ---
 ## Screenshots
-docs/images/01-home.png
+
+./docs/images/01-home.png
 docs/images/02-submit-incident.png
 docs/images/03-track-incident.png
 docs/images/04-admin-login.png
