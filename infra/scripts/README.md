@@ -11,3 +11,5 @@ rotate-admin-key.sh — Rotates the admin key by updating ADMIN_SHARED_KEY_HASH 
 export-current-azure-state.sh — Optional diagnostic script for comparing live Azure resources with the Bicep skeleton.
 
 configure-function-cors.sh — Legacy fallback for manually repairing Function App CORS if needed.
+
+

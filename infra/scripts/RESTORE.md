@@ -66,19 +66,13 @@ Use `SKIP_BICEP_VALIDATION=true` if local Azure CLI has certificate or corporate
 
 ## Step 2 — Upload the restore package to Azure Cloud Shell
 
-Upload one of these files to Azure Cloud Shell:
-
-```text
-infra/ssip-restore.sh
-```
-
-or, if using the manual ZIP workflow:
+Upload these file to Azure Cloud Shell:
 
 ```text
 infra/ssip-infra.zip
 ```
 
-Recommended:
+and
 
 ```text
 ssip-restore.sh
@@ -88,14 +82,8 @@ ssip-restore.sh
 
 ## Step 3 — Run the restore script in Cloud Shell
 
-If using the self-extracting script:
 
-```bash
-chmod +x ssip-restore.sh
-./ssip-restore.sh
-```
-
-If using the manual ZIP workflow:
+Using the manual ZIP workflow:
 
 ```bash
 rm -rf infra
