@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { adminLogin, getAdminMe } from "../../api/adminApi";
+import { adminLogin } from "../../api/adminApi";
 import { clearAdminSession, setAdminSession } from "./adminSession";
 
 export function AdminLoginPage() {
@@ -16,6 +16,10 @@ export function AdminLoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (loading) {
+      return;
+    }
+
     setError("");
     clearAdminSession();
 
@@ -27,11 +31,12 @@ export function AdminLoginPage() {
     try {
       setLoading(true);
 
-      await adminLogin(adminKey.trim(), adminName.trim() || "Admin");
+      const loginResponse = await adminLogin(
+        adminKey.trim(),
+        adminName.trim() || "Admin"
+      );
 
-      const identity = await getAdminMe();
-
-      setAdminSession(identity.principalName);
+      setAdminSession(loginResponse.principalName);
       setAdminKey("");
 
       navigate("/admin/incidents");
@@ -115,16 +120,16 @@ export function AdminLoginPage() {
             }}
           >
             <InfoTile
-              title="HttpOnly session"
-              text="After login, the admin key is exchanged for a backend session cookie."
+              title="Secure access"
+              text="Your account is protected with a secure login system designed to keep your data safe."
             />
             <InfoTile
-              title="Server verified"
-              text="The dashboard opens only after a session confirmation."
+              title="Verified protection"
+              text="We check your access before showing any sensitive information."
             />
             <InfoTile
-              title="No key storage"
-              text="The plaintext admin key is not stored in browser."
+              title="Privacy first"
+              text="We don’t store sensitive credentials in your browser."
             />
           </div>
         </div>
@@ -183,7 +188,11 @@ export function AdminLoginPage() {
                 value={adminName}
                 onChange={(event) => setAdminName(event.target.value)}
                 placeholder="Display name"
+                disabled={loading}
               />
+              <p className="ssip-help-text" style={{ margin: "6px 0 0" }}>
+                This name is used when creating internal comments.
+              </p>
             </div>
 
             <div>
@@ -198,6 +207,7 @@ export function AdminLoginPage() {
                 onChange={(event) => setAdminKey(event.target.value)}
                 placeholder="Key"
                 autoComplete="off"
+                disabled={loading}
               />
             </div>
 
@@ -230,7 +240,13 @@ function InfoTile({ title, text }: { title: string; text: string }) {
         padding: "16px",
       }}
     >
-      <h4 style={{ margin: "0 0 6px", color: "#001e3b", fontSize: "15px" }}>
+      <h4
+        style={{
+          margin: "0 0 6px",
+          color: "#001e3b",
+          fontSize: "15px",
+        }}
+      >
         {title}
       </h4>
       <p

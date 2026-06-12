@@ -72,15 +72,15 @@ Admin and reviewer users must authenticate.
 
 ### MVP authentication mechanism
 
-Use **Microsoft Entra ID through Azure Static Web Apps authentication**.
+Use custom auth cookie.
 
 ### Why this choice
 
 This gives:
 
 - protected admin routes
-- low-complexity Azure-native authentication
-- no custom identity system required for internal users
+- Full control of the authentication
+- 
 
 ---
 

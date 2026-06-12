@@ -155,3 +155,13 @@ coverage/
 
 # zip files
 *.zip
+
+# Local Bicep parameter files with secrets
+infra/bicep/*.local.json
+
+# Azure current-state exports may contain sensitive metadata
+docs/azure-current-state/*.json
+
+
+*.dev.json
+*.dev.local.json

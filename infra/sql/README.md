@@ -1,7 +1,13 @@
 # SQL
 
 This folder contains the SQL assets for the **Secure Serverless Incident Portal** project.
-
+---
+001_schema.sql                creates tables and relationships
+002_reference_data.sql        inserts statuses, severities, categories, report types
+003_indexes.sql               adds performance indexes
+004_admin_sessions.sql        creates admin session table or admin-session-specific structure
+005_revoke_admin_sessions.sql optional operational script
+---
 ## Purpose
 
 The SQL files in this folder define:
