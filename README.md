@@ -6,6 +6,25 @@ I built this project to explore what a realistic, security-focused serverless ap
 
 The project is intentionally designed around practical security and cloud engineering concerns: hashed tracking tokens, admin session cookies, Azure Functions, Azure SQL, CORS, deployment packaging, operational scripts, and a frontend that separates public workflows from internal SOC-style workflows.
 
+I suggest having a look at the docs/images folders as it contains pictures of the Azure portal and the frontend itself.
+
+---
+
+## Table of contents
+
+- why-this-project-exists
+- what-the-application-does
+- screenshots
+- what-makes-it-interesting
+- current-architecture
+- security-model
+- main-features
+- tech-stack
+- deployment-overview
+- admin-key-rotation
+- current-status
+- why-anyone-should-care
+
 ---
 
 ## Why this project exists
@@ -16,7 +35,7 @@ A useful reporting portal needs to handle questions like:
 
 - How can someone submit an incident without needing an account?
 - How can that same person track the report later without exposing internal data?
-- How should administrators authenticate without putting secrets in the frontend?
+- How should administrators authenticate securely?
 - How should internal comments and reviewer assignments be separated from public tracking?
 - How can the system stay cheap to run while still being cloud-native?
 - How can the whole environment be rebuilt if the Azure resources disappear?
@@ -59,7 +78,9 @@ Administrators can:
 The admin interface is designed to feel closer to a lightweight SOC console than a default web form.
 
 ---
+## Screenshots
 
+---
 ## What makes it interesting
 
 This project is not only about building forms and tables. The important part is the security and infrastructure work behind those forms.
@@ -230,7 +251,7 @@ This keeps sensitive tokens out of the database in plaintext form.
 - Node.js
 - TypeScript
 - Azure SQL
-- `mssql`
+- mssql
 - Application settings for secrets/configuration
 
 ### Infrastructure and operations
