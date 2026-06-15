@@ -56,6 +56,7 @@ export function AdminLoginPage() {
   return (
     <section className="ssip-card" style={{ padding: "32px" }}>
       <div
+        className="ssip-admin-login-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(0, 1fr) minmax(340px, 420px)",
@@ -64,6 +65,7 @@ export function AdminLoginPage() {
         }}
       >
         <div
+          className="ssip-admin-login-intro"
           style={{
             border: "1px solid var(--ssip-border)",
             borderLeft: "6px solid #0078d4",
@@ -135,6 +137,7 @@ export function AdminLoginPage() {
         </div>
 
         <form
+          className="ssip-admin-login-form"
           onSubmit={handleSubmit}
           style={{
             border: "1px solid var(--ssip-border)",

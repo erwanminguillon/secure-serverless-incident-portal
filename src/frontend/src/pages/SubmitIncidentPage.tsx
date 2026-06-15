@@ -42,6 +42,10 @@ export default function SubmitIncidentPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
+    if (loading) {
+      return;
+    }
+
     setError("");
     setPublicId("");
     setTrackingToken("");
@@ -116,7 +120,8 @@ export default function SubmitIncidentPage() {
         }}
       >
         Provide the relevant details for triage. SSIP will generate a public
-        incident ID and tracking token after submission.
+        incident ID and tracking token after submission. It may take 40 seconds
+        due to the database starting up, thank you for your patience.
       </p>
 
       {error && <div className="ssip-alert ssip-alert-error">{error}</div>}
@@ -150,6 +155,7 @@ export default function SubmitIncidentPage() {
 
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: "20px" }}>
         <section
+          className="ssip-submit-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "minmax(0, 1.4fr) minmax(280px, 0.8fr)",
@@ -287,6 +293,7 @@ export default function SubmitIncidentPage() {
 
           {!isAnonymous && (
             <div
+              className="ssip-responsive-grid"
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
@@ -323,7 +330,10 @@ export default function SubmitIncidentPage() {
           )}
         </section>
 
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <div
+          className="ssip-header-actions"
+          style={{ display: "flex", justifyContent: "flex-end" }}
+        >
           <button
             type="submit"
             disabled={loading}

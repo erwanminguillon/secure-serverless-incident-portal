@@ -456,7 +456,7 @@ export function AdminIncidentDetailPage() {
 
   return (
     <section>
-      <header style={styles.pageHeader}>
+      <header className="ssip-admin-header" style={styles.pageHeader}>
         <div>
           <p style={styles.eyebrow}>SOC Case View</p>
           <h2 style={styles.title}>
@@ -465,7 +465,7 @@ export function AdminIncidentDetailPage() {
           <p style={styles.subtitle}>Incident ID: {incident.incidentId}</p>
         </div>
 
-        <div style={{ display: "flex", gap: "10px" }}>
+        <div className="ssip-admin-actions" style={{ display: "flex", gap: "10px" }}>
           <Link to="/admin/incidents" style={styles.secondaryButton}>
             Back to incidents
           </Link>
@@ -478,7 +478,7 @@ export function AdminIncidentDetailPage() {
       {error && <div style={styles.alertError}>{error}</div>}
       {successMessage && <div style={styles.alertSuccess}>{successMessage}</div>}
 
-      <div style={styles.layout}>
+      <div className="ssip-admin-detail-layout" style={styles.layout}>
         <div style={{ display: "grid", gap: "18px" }}>
           <section style={styles.card}>
             <h3 style={styles.cardTitle}>Incident summary</h3>

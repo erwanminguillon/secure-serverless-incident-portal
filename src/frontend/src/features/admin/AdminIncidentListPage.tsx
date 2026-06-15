@@ -475,7 +475,7 @@ export function AdminIncidentListPage() {
             </p>
           </div>
 
-          <div style={styles.headerActions}>
+          <div className="ssip-admin-actions" style={styles.headerActions}>
             <button onClick={loadIncidents} style={styles.button}>
               Refresh
             </button>
@@ -502,7 +502,7 @@ export function AdminIncidentListPage() {
           </div>
         )}
 
-        <section style={styles.kpiGrid}>
+        <section className="ssip-kpi-grid" style={styles.kpiGrid}>
           <KpiCard label="Total incidents" value={metrics.total} />
           <KpiCard label="Open incidents" value={metrics.open} />
           <KpiCard label="Critical" value={metrics.critical} />
@@ -512,7 +512,7 @@ export function AdminIncidentListPage() {
         </section>
 
         <section style={{ ...styles.card, marginBottom: "18px" }}>
-          <div style={styles.filters}>
+          <div className="ssip-filters-grid" style={styles.filters}>
             <input
               style={styles.input}
               value={searchText}
@@ -571,7 +571,7 @@ export function AdminIncidentListPage() {
         </section>
 
         <section style={styles.panel}>
-          <div style={styles.tableWrapper}>
+          <div className="ssip-table-wrapper" style={styles.tableWrapper}>
             <table style={styles.table}>
               <thead>
                 <tr>
@@ -629,7 +629,7 @@ export function AdminIncidentListPage() {
                     </td>
 
                     <td style={styles.td}>
-                      <div style={styles.actionGroup}>
+                      <div className="ssip-action-group" style={styles.actionGroup}>
                         <button
                           style={{
                             ...styles.actionButton,

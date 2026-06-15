@@ -165,3 +165,8 @@ docs/azure-current-state/*.json
 
 *.dev.json
 *.dev.local.json
+
+
+
+admin-cookies.txt
+*cookies*.txt

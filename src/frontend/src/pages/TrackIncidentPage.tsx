@@ -117,6 +117,7 @@ export default function TrackIncidentPage() {
       {error && <div className="ssip-alert ssip-alert-error">{error}</div>}
 
       <div
+        className="ssip-responsive-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "minmax(0, 0.9fr) minmax(280px, 1fr)",
@@ -184,7 +185,7 @@ export default function TrackIncidentPage() {
           )}
 
           {result && (
-            <div style={{ display: "grid", gap: "14px" }}>
+            <div className="ssip-responsive-grid" style={{ display: "grid", gap: "14px" }}>
               <TrackingField label="Public ID" value={result.publicId} />
 
               <div>

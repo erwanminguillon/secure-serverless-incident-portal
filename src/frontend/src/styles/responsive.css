@@ -1,0 +1,211 @@
+/* SSIP responsive layout helpers
+   Public pages: mobile-friendly.
+   Admin pages: usable on mobile/tablet without redesigning the SOC dashboard.
+*/
+
+:root {
+  --ssip-mobile-page-padding: 14px;
+  --ssip-mobile-card-padding: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  max-width: 100%;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+code,
+pre,
+.ssip-token,
+.ssip-monospace {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.ssip-field,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+/* Prevent grid children from forcing overflow on small screens. */
+.ssip-responsive-grid > *,
+.ssip-public-grid > *,
+.ssip-submit-grid > *,
+.ssip-admin-login-grid > *,
+.ssip-admin-detail-layout > * {
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  main,
+  .ssip-page-shell,
+  .ssip-shell {
+    padding-left: var(--ssip-mobile-page-padding) !important;
+    padding-right: var(--ssip-mobile-page-padding) !important;
+  }
+
+  .ssip-card {
+    padding: var(--ssip-mobile-card-padding) !important;
+    border-radius: 14px !important;
+  }
+
+  .ssip-field,
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+
+  .ssip-button,
+  button[type="submit"] {
+    min-height: 44px;
+  }
+
+  .ssip-responsive-grid,
+  .ssip-public-grid,
+  .ssip-submit-grid,
+  .ssip-admin-login-grid,
+  .ssip-admin-detail-layout {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 16px !important;
+  }
+
+  .ssip-admin-login-form {
+    order: 1;
+  }
+
+  .ssip-admin-login-intro {
+    order: 2;
+  }
+
+  .ssip-page-header,
+  .ssip-admin-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+
+  .ssip-header-actions,
+  .ssip-admin-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .ssip-header-actions > *,
+  .ssip-admin-actions > * {
+    flex: 1 1 140px !important;
+    text-align: center !important;
+  }
+
+  h1,
+  h2 {
+    font-size: clamp(25px, 7vw, 34px) !important;
+    line-height: 1.12 !important;
+  }
+
+  h3 {
+    font-size: clamp(20px, 5.5vw, 26px) !important;
+    line-height: 1.16 !important;
+  }
+
+  .ssip-kpi-grid,
+  .ssip-filters-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .ssip-table-wrapper,
+  .ssip-table-scroll {
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    position: relative;
+    border-radius: 12px;
+  }
+
+  .ssip-table-wrapper::before,
+  .ssip-table-scroll::before {
+    content: "Swipe table sideways →";
+    display: block;
+    position: sticky;
+    left: 0;
+    top: 0;
+    z-index: 2;
+    width: max-content;
+    margin: 8px 0 8px 8px;
+    padding: 5px 9px;
+    border: 1px solid #c7e0f4;
+    border-radius: 999px;
+    background: #e5f1fb;
+    color: #004578;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  .ssip-table-wrapper table,
+  .ssip-table-scroll table {
+    min-width: 760px !important;
+  }
+
+  .ssip-table-wrapper th,
+  .ssip-table-wrapper td,
+  .ssip-table-scroll th,
+  .ssip-table-scroll td {
+    padding: 9px 8px !important;
+    font-size: 11px !important;
+  }
+
+  .ssip-action-group {
+    gap: 8px !important;
+  }
+
+  .ssip-action-group button {
+    min-height: 34px !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  main,
+  .ssip-page-shell,
+  .ssip-shell {
+    padding-left: 10px !important;
+    padding-right: 10px !important;
+  }
+
+  .ssip-card {
+    padding: 16px !important;
+  }
+
+  .ssip-help-text {
+    font-size: 13px !important;
+  }
+
+  .ssip-admin-actions > *,
+  .ssip-header-actions > * {
+    flex-basis: 100% !important;
+  }
+
+  .ssip-table-wrapper table,
+  .ssip-table-scroll table {
+    min-width: 720px !important;
+  }
+}
