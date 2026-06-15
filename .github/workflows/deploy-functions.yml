@@ -5,23 +5,23 @@ on:
     branches:
       - main
     paths:
-      - 'src/api/**'
-      - '.github/workflows/deploy-functions.yml'
+      - "src/api/**"
+      - ".github/workflows/deploy-functions.yml"
   workflow_dispatch:
 
 env:
-  AZURE_FUNCTIONAPP_NAME: func-ssip-dev-frc-01
-  AZURE_FUNCTIONAPP_PACKAGE_PATH: src/api
+  RESOURCE_GROUP: rg-ssip-dev-frc-01
+  FUNCTION_APP_NAME: func-ssip-dev-frc-01
+  API_DIR: src/api
+  NODE_VERSION: "22.x"
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+
     permissions:
       contents: read
-
-    defaults:
-      run:
-        working-directory: src/api
+      id-token: write
 
     steps:
       - name: Checkout repository
@@ -30,29 +30,126 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22.x'
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: src/api/package-lock.json
 
-      - name: Install dependencies (validation)
-        run: npm install
+      - name: Install API dependencies
+        working-directory: ${{ env.API_DIR }}
+        run: npm ci
 
-      - name: Build locally (validation)
+      - name: Build API
+        working-directory: ${{ env.API_DIR }}
         run: npm run build
 
-      - name: Show build output
+      - name: Prepare clean deployment package
+        working-directory: ${{ env.API_DIR }}
         run: |
-          echo "=== src/api root ==="
-          ls -la
-          echo "=== dist tree ==="
-          find dist -maxdepth 4 -type f | sort
+          rm -rf deploy_pkg backend.zip
+          mkdir deploy_pkg
 
-      - name: Deploy to Azure Functions (Flex Consumption)
-        uses: Azure/functions-action@v1
+          cp -r dist deploy_pkg/
+          cp package.json deploy_pkg/
+          cp package-lock.json deploy_pkg/
+          cp host.json deploy_pkg/
+
+      - name: Install production dependencies inside deployment package
+        working-directory: ${{ env.API_DIR }}/deploy_pkg
+        run: npm ci --omit=dev
+
+      - name: Create backend.zip
+        working-directory: ${{ env.API_DIR }}
+        run: |
+          python - <<'PY'
+          import os
+          import zipfile
+
+          source = "deploy_pkg"
+          out = "backend.zip"
+
+          with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
+              for root, dirs, files in os.walk(source):
+                  dirs[:] = [
+                      d for d in dirs
+                      if d not in {".git", "__pycache__"}
+                  ]
+
+                  for file in files:
+                      full = os.path.join(root, file)
+                      arc = os.path.relpath(full, source).replace(os.sep, "/")
+                      z.write(full, arc)
+
+          print(f"Created {out}")
+          PY
+
+      - name: Validate backend.zip contents
+        working-directory: ${{ env.API_DIR }}
+        run: |
+          python - <<'PY'
+          import sys
+          import zipfile
+
+          required = [
+              "host.json",
+              "package.json",
+              "dist/src/index.js",
+              "node_modules/@azure/functions/package.json",
+              "node_modules/mssql/package.json",
+          ]
+
+          forbidden_prefixes = [
+              "src/",
+              "deploy_pkg/",
+          ]
+
+          with zipfile.ZipFile("backend.zip") as z:
+              names = set(z.namelist())
+
+          missing = []
+
+          for item in required:
+              if item not in names:
+                  missing.append(item)
+                  print(f"{item}: MISSING")
+              else:
+                  print(f"{item}: OK")
+
+          for name in names:
+              for prefix in forbidden_prefixes:
+                  if name.startswith(prefix):
+                      print(f"ERROR: backend.zip contains forbidden path: {name}")
+                      sys.exit(1)
+
+          if missing:
+              print("backend.zip validation failed.")
+              sys.exit(1)
+
+          print("backend.zip validation passed.")
+          PY
+
+      - name: Upload backend.zip artifact
+        uses: actions/upload-artifact@v4
         with:
-          app-name: ${{ env.AZURE_FUNCTIONAPP_NAME }}
-          package: ${{ env.AZURE_FUNCTIONAPP_PACKAGE_PATH }}
-          publish-profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-          sku: flexconsumption
-          remote-build: true
-          enable-oryx-build: true
-          scm-do-build-during-deployment: true
-          respect-funcignore: true
+          name: backend.zip
+          path: src/api/backend.zip
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8443B015B2FB4E17903FD81190B9815F }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_395DBC5140AC446DA3FDBD1055A84D64 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C20094CC2D4E4D419D070C510496A7A9 }}
+
+      - name: Deploy backend.zip to Azure Functions
+        run: |
+          az functionapp deployment source config-zip \
+            --resource-group "${RESOURCE_GROUP}" \
+            --name "${FUNCTION_APP_NAME}" \
+            --src "${API_DIR}/backend.zip"
+
+      - name: Verify deployed functions
+        run: |
+          az functionapp function list \
+            --resource-group "${RESOURCE_GROUP}" \
+            --name "${FUNCTION_APP_NAME}" \
+            --output table
