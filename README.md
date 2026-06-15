@@ -79,6 +79,20 @@ The admin interface is designed to feel closer to a lightweight SOC console than
 
 ---
 ## Screenshots
+Home :
+![SSIP home page](docs/images/01-home.png)
+
+Incident submission :
+![SSIP home page](docs/images/02-submit-incident.png)
+
+Track Incident :
+![SSIP home page](docs/images/03-track-incident.png)
+
+Admin dashboard :
+![SSIP home page](docs/images/05-admin-dashboard.png)
+
+Issue view :
+![SSIP home page](docs/images/06-admin-case-view.png)
 
 ---
 ## What makes it interesting
