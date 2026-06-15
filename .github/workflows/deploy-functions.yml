@@ -31,12 +31,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: src/api/package-lock.json
 
       - name: Install API dependencies
         working-directory: ${{ env.API_DIR }}
-        run: npm ci
+        run: npm install
 
       - name: Build API
         working-directory: ${{ env.API_DIR }}
@@ -50,12 +48,15 @@ jobs:
 
           cp -r dist deploy_pkg/
           cp package.json deploy_pkg/
-          cp package-lock.json deploy_pkg/
           cp host.json deploy_pkg/
+
+          if [ -f package-lock.json ]; then
+            cp package-lock.json deploy_pkg/
+          fi
 
       - name: Install production dependencies inside deployment package
         working-directory: ${{ env.API_DIR }}/deploy_pkg
-        run: npm ci --omit=dev
+        run: npm install --omit=dev
 
       - name: Create backend.zip
         working-directory: ${{ env.API_DIR }}

@@ -31,8 +31,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: npm
-          cache-dependency-path: src/frontend/package-lock.json
 
       - name: Write production environment file
         working-directory: ${{ env.FRONTEND_DIR }}
@@ -41,7 +39,7 @@ jobs:
 
       - name: Install frontend dependencies
         working-directory: ${{ env.FRONTEND_DIR }}
-        run: npm ci
+        run: npm install
 
       - name: Build frontend
         working-directory: ${{ env.FRONTEND_DIR }}
