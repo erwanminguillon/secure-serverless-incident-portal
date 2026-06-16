@@ -1,6 +1,6 @@
 # Secure Serverless Incident Portal
 
-Secure Serverless Incident Portal, or SSIP, is a cloud-native incident reporting and triage platform built on Azure.
+Secure Serverless Incident Portal, or SSIP, is a cloud-native incident reporting and triage platform built on Azure, by Erwan Minguillon.
 
 I built this project to explore what a realistic, security-focused serverless application looks like beyond a simple CRUD demo. The goal was to create a system where public users can submit and track security reports, while administrators can review, classify, assign, comment on, and update incidents through a protected internal console.
 
