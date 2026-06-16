@@ -14,8 +14,18 @@ node -v
 npm -v
 func --version
 
+remmeber backend :
+cd src/api
+npm run build
+func start
+
+remmeber frontend :
+cd src/frontend
+npm run dev
 
 Azurite work (local):
 azurite --silent --location c:\azurite --debug c:\azurite\debug.log
+
+process.env is where the magic happens
 
 Important to go to networking and add current ipv4 to the exclusion (sql server)

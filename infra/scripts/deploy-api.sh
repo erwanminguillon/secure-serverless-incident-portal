@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+
+# FALLBACK SCRIPT, NOW OBSOLETE
 set -euo pipefail
 
 RESOURCE_GROUP="rg-ssip-dev-frc-01"

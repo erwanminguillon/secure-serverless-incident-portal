@@ -12,14 +12,18 @@ The resource group contains two user-assigned managed identities.
 
 These managed identities are NOT part of the application runtime data path. Runtime traffic flows from the frontend to the backend API, then to Azure SQL and supporting storage/monitoring services.
 
-## Admin Authentication
 
-Internal API endpoints are protected by a shared administrator key.
+## Local vs Azure app settings
 
-The frontend and public users do not receive this key. The backend expects the key in the `x-admin-key` header and compares its SHA-256 hash against the Azure Function App setting `ADMIN_SHARED_KEY_HASH`.
+`src/api/local.settings.json` is used only when running the Azure Functions backend locally with `func start`.
 
-Verified Azure behavior:
+The deployed Azure Function App does not read `local.settings.json`. It reads its own app settings from Azure.
 
-- Anonymous request to `/api/internal/incidents`: `401 Unauthorized`
-- Request with `x-dev-admin: true`: `401 Unauthorized`
-- Request with valid `x-admin-key`: `200 OK`
+Therefore, values such as `ADMIN_SHARED_KEY_HASH`, `SQL_CONNECTION_STRING`, and `ADMIN_SESSION_SIGNING_SECRET` can be different locally and in Azure.
+
+This is expected.
+
+Local backend:
+
+```text
+src/api/local.settings.json

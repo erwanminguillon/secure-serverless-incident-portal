@@ -2,7 +2,6 @@
 
 This file lists the secrets and sensitive configuration values required to recreate or operate SSIP.
 
-Do not store actual secret values in this repository.
 
 The purpose of this checklist is to explain:
 
