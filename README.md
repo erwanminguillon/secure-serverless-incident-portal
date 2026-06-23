@@ -110,7 +110,7 @@ Some of the more interesting parts are:
 - Admin routes verify the backend session with `/internal/auth/me`.
 - CORS is configured to support credentialed requests from the frontend origin.
 - Deployment scripts package the frontend and backend separately.
-- The project is being prepared for full infrastructure recreation using Infrastructure as Code (IaC).
+- The project has full infrastructure recreation using Infrastructure as Code (IaC).
 
 ---
 
