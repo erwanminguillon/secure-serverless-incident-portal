@@ -1,0 +1,95 @@
+.ssip-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    #e5f1fb 0%,
+    #f8fbfe 45%,
+    #e5f1fb 100%
+  );
+  background-size: 220% 100%;
+  animation: ssip-skeleton-shimmer 1.25s ease-in-out infinite;
+}
+
+@keyframes ssip-skeleton-shimmer {
+  0% {
+    background-position: 120% 0;
+  }
+
+  100% {
+    background-position: -120% 0;
+  }
+}
+
+.ssip-loading-banner {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  align-items: center;
+  border: 1px solid #c7e0f4;
+  border-left: 6px solid #0078d4;
+  border-radius: 14px;
+  background: #f8fbfe;
+  color: #001e3b;
+  padding: 18px;
+  margin-bottom: 18px;
+}
+
+.ssip-loading-banner h3 {
+  margin: 4px 0 6px;
+  color: #001e3b;
+  font-size: 20px;
+}
+
+.ssip-loading-banner p {
+  margin: 0;
+  color: #53657a;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.ssip-loading-eyebrow {
+  color: #0078d4 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.12em !important;
+  text-transform: uppercase !important;
+}
+
+.ssip-loading-timer {
+  min-width: 82px;
+  border: 1px solid #c7e0f4;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 10px 12px;
+  text-align: center;
+}
+
+.ssip-loading-timer span {
+  display: block;
+  color: #004578;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.ssip-loading-timer small {
+  display: block;
+  margin-top: 4px;
+  color: #53657a;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 768px) {
+  .ssip-loading-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ssip-loading-timer {
+    width: 100%;
+  }
+}

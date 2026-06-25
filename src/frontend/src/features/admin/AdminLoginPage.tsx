@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { adminLogin } from "../../api/adminApi";
+import { LoadingBanner } from "../../components/Skeleton";
 import { clearAdminSession, setAdminSession } from "./adminSession";
 
 export function AdminLoginPage() {
@@ -170,6 +171,13 @@ export function AdminLoginPage() {
           >
             Administrator access
           </h3>
+
+          {loading && (
+            <LoadingBanner
+              title="Verifying admin access"
+              message="SSIP is validating the admin key and preparing the protected dashboard session."
+            />
+          )}
 
           {error && (
             <div

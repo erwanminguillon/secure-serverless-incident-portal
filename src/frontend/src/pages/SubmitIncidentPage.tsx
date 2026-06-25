@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 
 import { submitIncident } from "../api/incidentApi";
@@ -7,6 +7,13 @@ import type {
   ReportTypeCode,
   SeverityCode,
 } from "../types/reference-data";
+
+import {
+  LoadingBanner,
+  SkeletonBlock,
+  SkeletonCard,
+  SkeletonText,
+} from "../components/Skeleton";
 
 const categories: Array<{ value: CategoryCode | ""; label: string }> = [
   { value: "", label: "No category" },
@@ -37,7 +44,23 @@ export default function SubmitIncidentPage() {
   const [trackingToken, setTrackingToken] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [error, setError] = useState("");
+
   const [loading, setLoading] = useState(false);
+  const [submitStartedAt, setSubmitStartedAt] = useState<number | null>(null);
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  useEffect(() => {
+    if (!loading || submitStartedAt === null) {
+      setElapsedSeconds(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - submitStartedAt) / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [loading, submitStartedAt]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -50,6 +73,7 @@ export default function SubmitIncidentPage() {
     setPublicId("");
     setTrackingToken("");
     setSuccessMessage("");
+    setSubmitStartedAt(Date.now());
     setLoading(true);
 
     try {
@@ -80,6 +104,7 @@ export default function SubmitIncidentPage() {
       setError(err instanceof Error ? err.message : "Submission failed.");
     } finally {
       setLoading(false);
+      setSubmitStartedAt(null);
     }
   }
 
@@ -120,8 +145,8 @@ export default function SubmitIncidentPage() {
         }}
       >
         Provide the relevant details for triage. SSIP will generate a public
-        incident ID and tracking token after submission. It may take 40 seconds
-        due to the database starting up, thank you for your patience.
+        incident ID and tracking token after submission. It may take up to 60
+        seconds if the serverless database is waking up.
       </p>
 
       {error && <div className="ssip-alert ssip-alert-error">{error}</div>}
@@ -153,7 +178,46 @@ export default function SubmitIncidentPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: "20px" }}>
+      {loading && (
+        <>
+          <LoadingBanner
+            title="Creating your incident report"
+            message="SSIP has received your request and is creating a secure tracking token. This can take up to 60 seconds if the serverless database is waking up."
+            elapsedSeconds={elapsedSeconds}
+          />
+
+          <div
+            className="ssip-submit-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1.4fr) minmax(280px, 0.8fr)",
+              gap: "20px",
+              marginBottom: "20px",
+            }}
+          >
+            <SkeletonCard>
+              <SkeletonBlock width="32%" height="16px" />
+              <SkeletonBlock width="82%" height="34px" borderRadius="10px" />
+              <SkeletonText lines={5} />
+            </SkeletonCard>
+
+            <SkeletonCard>
+              <SkeletonBlock width="46%" height="16px" />
+              <SkeletonBlock width="100%" height="42px" borderRadius="10px" />
+              <SkeletonBlock width="100%" height="42px" borderRadius="10px" />
+              <SkeletonBlock width="100%" height="42px" borderRadius="10px" />
+            </SkeletonCard>
+          </div>
+        </>
+      )}
+
+      <form
+        onSubmit={handleSubmit}
+        style={{
+          display: loading ? "none" : "grid",
+          gap: "20px",
+        }}
+      >
         <section
           className="ssip-submit-grid"
           style={{
@@ -239,7 +303,10 @@ export default function SubmitIncidentPage() {
                   }
                 >
                   {categories.map((category) => (
-                    <option key={category.value || "none"} value={category.value}>
+                    <option
+                      key={category.value || "none"}
+                      value={category.value}
+                    >
                       {category.label}
                     </option>
                   ))}

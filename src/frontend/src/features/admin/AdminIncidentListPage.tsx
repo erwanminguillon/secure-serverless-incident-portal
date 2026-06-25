@@ -10,6 +10,13 @@ import {
 } from "../../api/adminApi";
 import type { IncidentListItem } from "../../api/adminApi";
 
+import {
+  LoadingBanner,
+  SkeletonBlock,
+  SkeletonCard,
+  SkeletonTable,
+} from "../../components/Skeleton";
+
 import { clearAdminSession, setAdminSession } from "./adminSession";
 
 type StatusFilter =
@@ -181,15 +188,6 @@ const styles: Record<string, CSSProperties> = {
     background: "#dcfce7",
     border: "1px solid #bbf7d0",
     color: "#166534",
-    borderRadius: "10px",
-    padding: "14px",
-    marginBottom: "16px",
-    fontSize: "14px",
-  },
-  info: {
-    background: "#e5f1fb",
-    border: "1px solid #c7e0f4",
-    color: "#004578",
     borderRadius: "10px",
     padding: "14px",
     marginBottom: "16px",
@@ -466,7 +464,7 @@ export function AdminIncidentListPage() {
   return (
     <main style={styles.page}>
       <section style={styles.shell}>
-        <header style={styles.header}>
+        <header className="ssip-admin-header" style={styles.header}>
           <div>
             <p style={styles.eyebrow}>SSIP SOC Console</p>
             <h2 style={styles.title}>Admin Incident Dashboard</h2>
@@ -486,243 +484,264 @@ export function AdminIncidentListPage() {
         </header>
 
         {error && <div style={styles.error}>{error}</div>}
-
         {successMessage && <div style={styles.success}>{successMessage}</div>}
 
-        {loading && (
-          <div style={styles.info}>
-            <strong>Loading incidents...</strong>
-            <p style={{ margin: "8px 0 0", lineHeight: 1.5 }}>
-              The first request can take up to 60 seconds while Azure starts the
-              serverless backend and database. Please keep this page open.
-            </p>
-            <p style={{ margin: "8px 0 0", fontWeight: 800 }}>
-              Elapsed: {elapsedSeconds}s
-            </p>
-          </div>
-        )}
-
-        <section className="ssip-kpi-grid" style={styles.kpiGrid}>
-          <KpiCard label="Total incidents" value={metrics.total} />
-          <KpiCard label="Open incidents" value={metrics.open} />
-          <KpiCard label="Critical" value={metrics.critical} />
-          <KpiCard label="High" value={metrics.high} />
-          <KpiCard label="In triage" value={metrics.triage} />
-          <KpiCard label="Investigating" value={metrics.investigating} />
-        </section>
-
-        <section style={{ ...styles.card, marginBottom: "18px" }}>
-          <div className="ssip-filters-grid" style={styles.filters}>
-            <input
-              style={styles.input}
-              value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
-              placeholder="Search by public ID, title, report type, or category..."
+        {loading ? (
+          <>
+            <LoadingBanner
+              title="Loading SOC dashboard"
+              message="The first request can take up to 60 seconds while Azure starts the serverless backend and database. The dashboard structure is loading while SSIP waits for the data."
+              elapsedSeconds={elapsedSeconds}
             />
 
-            <select
-              style={styles.input}
-              value={statusFilter}
-              onChange={(event) =>
-                setStatusFilter(event.target.value as StatusFilter)
-              }
-            >
-              <option style={optionStyle()} value="all">All statuses</option>
-              <option style={optionStyle()} value="submitted">Submitted</option>
-              <option style={optionStyle()} value="triage">Triage</option>
-              <option style={optionStyle()} value="investigating">Investigating</option>
-              <option style={optionStyle()} value="resolved">Resolved</option>
-              <option style={optionStyle()} value="closed">Closed</option>
-              <option style={optionStyle()} value="rejected">Rejected</option>
-            </select>
-
-            <select
-              style={styles.input}
-              value={severityFilter}
-              onChange={(event) =>
-                setSeverityFilter(event.target.value as SeverityFilter)
-              }
-            >
-              <option style={optionStyle()} value="all">All severities</option>
-              <option style={optionStyle()} value="low">Low</option>
-              <option style={optionStyle()} value="medium">Medium</option>
-              <option style={optionStyle()} value="high">High</option>
-              <option style={optionStyle()} value="critical">Critical</option>
-            </select>
-
-            <select
-              style={styles.input}
-              value={categoryFilter}
-              onChange={(event) => setCategoryFilter(event.target.value)}
-            >
-              <option style={optionStyle()} value="all">All categories</option>
-              {categories.map((category) => (
-                <option style={optionStyle()} key={category} value={category}>
-                  {formatCode(category)}
-                </option>
+            <section className="ssip-kpi-grid" style={styles.kpiGrid}>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <SkeletonCard key={index} style={{ minHeight: "100px" }}>
+                  <SkeletonBlock width="55%" height="13px" />
+                  <SkeletonBlock width="38%" height="32px" borderRadius="10px" />
+                </SkeletonCard>
               ))}
-            </select>
-          </div>
+            </section>
 
-          <p style={{ margin: 0, color: "#004578", fontSize: "13px" }}>
-            Showing {filteredItems.length} of {totalCount} incident
-            {totalCount === 1 ? "" : "s"}.
-          </p>
-        </section>
+            <section style={{ ...styles.card, marginBottom: "18px" }}>
+              <div className="ssip-filters-grid" style={styles.filters}>
+                <SkeletonBlock height="40px" borderRadius="8px" />
+                <SkeletonBlock height="40px" borderRadius="8px" />
+                <SkeletonBlock height="40px" borderRadius="8px" />
+                <SkeletonBlock height="40px" borderRadius="8px" />
+              </div>
+              <SkeletonBlock width="220px" height="14px" />
+            </section>
 
-        <section style={styles.panel}>
-          <div className="ssip-table-wrapper" style={styles.tableWrapper}>
-            <table style={styles.table}>
-              <thead>
-                <tr>
-                  <th style={styles.th}>Incident</th>
-                  <th style={styles.th}>Type</th>
-                  <th style={styles.th}>Category</th>
-                  <th style={styles.th}>Severity</th>
-                  <th style={styles.th}>Status</th>
-                  <th style={styles.th}>Submitted</th>
-                  <th style={styles.th}>Reviewer</th>
-                  <th style={styles.th}>Actions</th>
-                </tr>
-              </thead>
+            <section style={styles.panel}>
+              <SkeletonTable rows={6} />
+            </section>
+          </>
+        ) : (
+          <>
+            <section className="ssip-kpi-grid" style={styles.kpiGrid}>
+              <KpiCard label="Total incidents" value={metrics.total} />
+              <KpiCard label="Open incidents" value={metrics.open} />
+              <KpiCard label="Critical" value={metrics.critical} />
+              <KpiCard label="High" value={metrics.high} />
+              <KpiCard label="In triage" value={metrics.triage} />
+              <KpiCard label="Investigating" value={metrics.investigating} />
+            </section>
 
-              <tbody>
-                {filteredItems.map((incident) => (
-                  <tr key={incident.incidentId}>
-                    <td style={styles.td}>
-                      <Link
-                        to={`/admin/incidents/${incident.incidentId}`}
-                        style={styles.link}
-                      >
-                        {incident.publicId}
-                      </Link>
-                      <div
-                        style={{
-                          color: "#001e3b",
-                          marginTop: "4px",
-                          fontWeight: 700,
-                        }}
-                      >
-                        {incident.title}
-                      </div>
-                    </td>
+            <section style={{ ...styles.card, marginBottom: "18px" }}>
+              <div className="ssip-filters-grid" style={styles.filters}>
+                <input
+                  style={styles.input}
+                  value={searchText}
+                  onChange={(event) => setSearchText(event.target.value)}
+                  placeholder="Search by public ID, title, report type, or category..."
+                />
 
-                    <td style={styles.td}>{formatCode(incident.reportTypeCode)}</td>
-                    <td style={styles.td}>{formatCode(incident.categoryCode)}</td>
+                <select
+                  style={styles.input}
+                  value={statusFilter}
+                  onChange={(event) =>
+                    setStatusFilter(event.target.value as StatusFilter)
+                  }
+                >
+                  <option style={optionStyle()} value="all">All statuses</option>
+                  <option style={optionStyle()} value="submitted">Submitted</option>
+                  <option style={optionStyle()} value="triage">Triage</option>
+                  <option style={optionStyle()} value="investigating">Investigating</option>
+                  <option style={optionStyle()} value="resolved">Resolved</option>
+                  <option style={optionStyle()} value="closed">Closed</option>
+                  <option style={optionStyle()} value="rejected">Rejected</option>
+                </select>
 
-                    <td style={styles.td}>
-                      <span style={badgeStyle("severity", incident.severityCode)}>
-                        {formatCode(incident.severityCode)}
-                      </span>
-                    </td>
+                <select
+                  style={styles.input}
+                  value={severityFilter}
+                  onChange={(event) =>
+                    setSeverityFilter(event.target.value as SeverityFilter)
+                  }
+                >
+                  <option style={optionStyle()} value="all">All severities</option>
+                  <option style={optionStyle()} value="low">Low</option>
+                  <option style={optionStyle()} value="medium">Medium</option>
+                  <option style={optionStyle()} value="high">High</option>
+                  <option style={optionStyle()} value="critical">Critical</option>
+                </select>
 
-                    <td style={styles.td}>
-                      <span style={badgeStyle("status", incident.statusCode)}>
-                        {formatCode(incident.statusCode)}
-                      </span>
-                    </td>
+                <select
+                  style={styles.input}
+                  value={categoryFilter}
+                  onChange={(event) => setCategoryFilter(event.target.value)}
+                >
+                  <option style={optionStyle()} value="all">All categories</option>
+                  {categories.map((category) => (
+                    <option style={optionStyle()} key={category} value={category}>
+                      {formatCode(category)}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-                    <td style={styles.td}>{formatDate(incident.submittedUtc)}</td>
+              <p style={{ margin: 0, color: "#004578", fontSize: "13px" }}>
+                Showing {filteredItems.length} of {totalCount} incident
+                {totalCount === 1 ? "" : "s"}.
+              </p>
+            </section>
 
-                    <td style={styles.td}>
-                      {incident.assignedReviewerDisplayName ?? "Unassigned"}
-                    </td>
+            <section style={styles.panel}>
+              <div className="ssip-table-wrapper" style={styles.tableWrapper}>
+                <table style={styles.table}>
+                  <thead>
+                    <tr>
+                      <th style={styles.th}>Incident</th>
+                      <th style={styles.th}>Type</th>
+                      <th style={styles.th}>Category</th>
+                      <th style={styles.th}>Severity</th>
+                      <th style={styles.th}>Status</th>
+                      <th style={styles.th}>Submitted</th>
+                      <th style={styles.th}>Reviewer</th>
+                      <th style={styles.th}>Actions</th>
+                    </tr>
+                  </thead>
 
-                    <td style={styles.td}>
-                      <div className="ssip-action-group" style={styles.actionGroup}>
-                        <button
-                          style={{
-                            ...styles.actionButton,
-                            ...(isActionRunning(incident.incidentId)
-                              ? styles.disabledButton
-                              : {}),
-                          }}
-                          disabled={isActionRunning(incident.incidentId)}
-                          onClick={() =>
-                            handleQuickStatusChange(incident.incidentId, "triage")
-                          }
-                        >
-                          {isActionRunning(incident.incidentId)
-                            ? "Updating..."
-                            : "Accept"}
-                        </button>
+                  <tbody>
+                    {filteredItems.map((incident) => (
+                      <tr key={incident.incidentId}>
+                        <td style={styles.td}>
+                          <Link
+                            to={`/admin/incidents/${incident.incidentId}`}
+                            style={styles.link}
+                          >
+                            {incident.publicId}
+                          </Link>
+                          <div
+                            style={{
+                              color: "#001e3b",
+                              marginTop: "4px",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {incident.title}
+                          </div>
+                        </td>
 
-                        <button
-                          style={{
-                            ...styles.actionButton,
-                            ...(isActionRunning(incident.incidentId)
-                              ? styles.disabledButton
-                              : {}),
-                          }}
-                          disabled={isActionRunning(incident.incidentId)}
-                          onClick={() =>
-                            handleQuickStatusChange(
-                              incident.incidentId,
-                              "investigating"
-                            )
-                          }
-                        >
-                          Investigate
-                        </button>
+                        <td style={styles.td}>{formatCode(incident.reportTypeCode)}</td>
+                        <td style={styles.td}>{formatCode(incident.categoryCode)}</td>
 
-                        <button
-                          style={{
-                            ...styles.actionButton,
-                            ...(isActionRunning(incident.incidentId)
-                              ? styles.disabledButton
-                              : {}),
-                          }}
-                          disabled={isActionRunning(incident.incidentId)}
-                          onClick={() =>
-                            handleQuickStatusChange(incident.incidentId, "resolved")
-                          }
-                        >
-                          Resolve
-                        </button>
+                        <td style={styles.td}>
+                          <span style={badgeStyle("severity", incident.severityCode)}>
+                            {formatCode(incident.severityCode)}
+                          </span>
+                        </td>
 
-                        <button
-                          style={{
-                            ...styles.actionButton,
-                            ...(isActionRunning(incident.incidentId)
-                              ? styles.disabledButton
-                              : {}),
-                          }}
-                          disabled={isActionRunning(incident.incidentId)}
-                          onClick={() =>
-                            handleQuickStatusChange(incident.incidentId, "closed")
-                          }
-                        >
-                          Close
-                        </button>
+                        <td style={styles.td}>
+                          <span style={badgeStyle("status", incident.statusCode)}>
+                            {formatCode(incident.statusCode)}
+                          </span>
+                        </td>
 
-                        <button
-                          style={{
-                            ...styles.rejectActionButton,
-                            ...(isActionRunning(incident.incidentId)
-                              ? styles.disabledButton
-                              : {}),
-                          }}
-                          disabled={isActionRunning(incident.incidentId)}
-                          onClick={() =>
-                            handleQuickStatusChange(incident.incidentId, "rejected")
-                          }
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        <td style={styles.td}>{formatDate(incident.submittedUtc)}</td>
 
-          {!loading && filteredItems.length === 0 && (
-            <div style={{ padding: "22px", color: "#004578" }}>
-              No incidents match the current filters.
-            </div>
-          )}
-        </section>
+                        <td style={styles.td}>
+                          {incident.assignedReviewerDisplayName ?? "Unassigned"}
+                        </td>
+
+                        <td style={styles.td}>
+                          <div className="ssip-action-group" style={styles.actionGroup}>
+                            <button
+                              style={{
+                                ...styles.actionButton,
+                                ...(isActionRunning(incident.incidentId)
+                                  ? styles.disabledButton
+                                  : {}),
+                              }}
+                              disabled={isActionRunning(incident.incidentId)}
+                              onClick={() =>
+                                handleQuickStatusChange(incident.incidentId, "triage")
+                              }
+                            >
+                              {isActionRunning(incident.incidentId)
+                                ? "Updating..."
+                                : "Accept"}
+                            </button>
+
+                            <button
+                              style={{
+                                ...styles.actionButton,
+                                ...(isActionRunning(incident.incidentId)
+                                  ? styles.disabledButton
+                                  : {}),
+                              }}
+                              disabled={isActionRunning(incident.incidentId)}
+                              onClick={() =>
+                                handleQuickStatusChange(
+                                  incident.incidentId,
+                                  "investigating"
+                                )
+                              }
+                            >
+                              Investigate
+                            </button>
+
+                            <button
+                              style={{
+                                ...styles.actionButton,
+                                ...(isActionRunning(incident.incidentId)
+                                  ? styles.disabledButton
+                                  : {}),
+                              }}
+                              disabled={isActionRunning(incident.incidentId)}
+                              onClick={() =>
+                                handleQuickStatusChange(incident.incidentId, "resolved")
+                              }
+                            >
+                              Resolve
+                            </button>
+
+                            <button
+                              style={{
+                                ...styles.actionButton,
+                                ...(isActionRunning(incident.incidentId)
+                                  ? styles.disabledButton
+                                  : {}),
+                              }}
+                              disabled={isActionRunning(incident.incidentId)}
+                              onClick={() =>
+                                handleQuickStatusChange(incident.incidentId, "closed")
+                              }
+                            >
+                              Close
+                            </button>
+
+                            <button
+                              style={{
+                                ...styles.rejectActionButton,
+                                ...(isActionRunning(incident.incidentId)
+                                  ? styles.disabledButton
+                                  : {}),
+                              }}
+                              disabled={isActionRunning(incident.incidentId)}
+                              onClick={() =>
+                                handleQuickStatusChange(incident.incidentId, "rejected")
+                              }
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {filteredItems.length === 0 && (
+                <div style={{ padding: "22px", color: "#004578" }}>
+                  No incidents match the current filters.
+                </div>
+              )}
+            </section>
+          </>
+        )}
       </section>
     </main>
   );
