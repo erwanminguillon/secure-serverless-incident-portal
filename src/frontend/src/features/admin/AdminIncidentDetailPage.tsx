@@ -145,6 +145,9 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 800,
     cursor: "pointer",
     textDecoration: "none",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
   dangerButton: {
     border: "1px solid #fecaca",
@@ -313,7 +316,8 @@ function badgeStyle(kind: "status" | "severity", value: string): CSSProperties {
 
 export function AdminIncidentDetailPage() {
   const navigate = useNavigate();
-  const { incidentId } = useParams<{ incidentId: string }>();
+  const params = useParams<{ incidentId?: string; id?: string }>();
+  const incidentId = params.incidentId ?? params.id;
 
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
   const [referenceData, setReferenceData] = useState<ReferenceData | null>(null);
@@ -380,50 +384,50 @@ export function AdminIncidentDetailPage() {
   }
 
   async function loadPage() {
-  if (!incidentId) {
-    setError("Incident ID is missing from the route.");
-    setLoading(false);
-    return;
-  }
-
-  try {
-    setLoading(true);
-    setLoadStartedAt(Date.now());
-    setError(null);
-
-    const identity = await getAdminMe();
-    setAdminSession(identity.principalName);
-
-    const [incidentResponse, referenceResponse, commentsResponse] =
-      await Promise.all([
-        getIncidentById(incidentId),
-        getReferenceData(),
-        listIncidentComments(incidentId),
-      ]);
-
-    setIncident(incidentResponse);
-    setReferenceData(referenceResponse);
-    setComments(commentsResponse.items);
-    setStatusCode(incidentResponse.statusCode);
-    setSeverityCode(incidentResponse.severityCode);
-    setAssignedReviewerDisplayName(
-      incidentResponse.assignedReviewerDisplayName ?? ""
-    );
+    if (!incidentId) {
+      setError("Incident ID is missing from the route.");
+      setLoading(false);
+      return;
+    }
 
     try {
-      const evidenceResponse = await listIncidentEvidence(incidentId);
-      setEvidence(evidenceResponse.items);
-    } catch (evidenceErr) {
-      setEvidence([]);
-      console.warn("Evidence could not be loaded.", evidenceErr);
+      setLoading(true);
+      setLoadStartedAt(Date.now());
+      setError(null);
+
+      const identity = await getAdminMe();
+      setAdminSession(identity.principalName);
+
+      const [incidentResponse, referenceResponse, commentsResponse] =
+        await Promise.all([
+          getIncidentById(incidentId),
+          getReferenceData(),
+          listIncidentComments(incidentId),
+        ]);
+
+      setIncident(incidentResponse);
+      setReferenceData(referenceResponse);
+      setComments(commentsResponse.items);
+      setStatusCode(incidentResponse.statusCode);
+      setSeverityCode(incidentResponse.severityCode);
+      setAssignedReviewerDisplayName(
+        incidentResponse.assignedReviewerDisplayName ?? ""
+      );
+
+      try {
+        const evidenceResponse = await listIncidentEvidence(incidentId);
+        setEvidence(evidenceResponse.items);
+      } catch (evidenceErr) {
+        setEvidence([]);
+        console.warn("Evidence could not be loaded.", evidenceErr);
+      }
+    } catch (err) {
+      handleApiError(err);
+    } finally {
+      setLoading(false);
+      setLoadStartedAt(null);
     }
-  } catch (err) {
-    handleApiError(err);
-  } finally {
-    setLoading(false);
-    setLoadStartedAt(null);
   }
-}
 
   function handleApiError(err: unknown) {
     const errorWithStatus = err as Error & {
@@ -676,107 +680,22 @@ export function AdminIncidentDetailPage() {
             {evidence.length > 0 && (
               <div style={{ display: "grid", gap: "12px" }}>
                 {evidence.map((item) => (
-                  <article key={item.evidenceId} style={styles.evidenceItem}>
-                    <p
-                      style={{
-                        margin: "0 0 6px",
-                        color: "#001e3b",
-                        fontWeight: 800,
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {item.originalFileName}
-                    </p>
-
-                    <p
-                      style={{
-                        margin: "0 0 8px",
-                        color: "#53657a",
-                        fontSize: "13px",
-                        lineHeight: 1.5,
-                      }}
-                    >
-                      {item.contentType} · {formatBytes(item.fileSizeBytes)} ·
-                      uploaded {formatDate(item.uploadedUtc)} ·{" "}
-                      {formatCode(item.uploadedByType)}
-                    </p>
-
-                    <p
-                      style={{
-                        margin: "0 0 12px",
-                        color: "#004578",
-                        fontSize: "12px",
-                        fontFamily:
-                          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      SHA-256: {shortHash(item.sha256Hash)}
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEvidence(item)}
-                      disabled={loadingEvidenceId === item.evidenceId}
-                      style={styles.secondaryButton}
-                    >
-                      {loadingEvidenceId === item.evidenceId
-                        ? "Opening..."
-                        : "Open evidence"}
-                    </button>
-                  </article>
+                  <EvidenceItem
+                    key={item.evidenceId}
+                    item={item}
+                    loadingEvidenceId={loadingEvidenceId}
+                    onOpen={handleOpenEvidence}
+                  />
                 ))}
               </div>
             )}
 
             {activeEvidenceUrl && (
-              <div style={styles.evidencePreview}>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    gap: "12px",
-                    alignItems: "center",
-                    marginBottom: "12px",
-                  }}
-                >
-                  <div>
-                    <p
-                      style={{
-                        margin: 0,
-                        color: "#004578",
-                        fontSize: "12px",
-                        fontWeight: 800,
-                        textTransform: "uppercase",
-                        letterSpacing: "0.08em",
-                      }}
-                    >
-                      Evidence preview
-                    </p>
-
-                    <p
-                      style={{
-                        margin: "4px 0 0",
-                        color: "#001e3b",
-                        fontWeight: 800,
-                        wordBreak: "break-word",
-                      }}
-                    >
-                      {activeEvidenceName ?? "Uploaded evidence"}
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleCloseEvidencePreview}
-                    style={styles.secondaryButton}
-                  >
-                    Close
-                  </button>
-                </div>
-
-                {activeEvidenceUrl}
-              </div>
+              <EvidencePreview
+                imageUrl={activeEvidenceUrl}
+                imageName={activeEvidenceName}
+                onClose={handleCloseEvidencePreview}
+              />
             )}
           </section>
 
@@ -938,6 +857,136 @@ export function AdminIncidentDetailPage() {
         </aside>
       </div>
     </section>
+  );
+}
+
+function EvidenceItem({
+  item,
+  loadingEvidenceId,
+  onOpen,
+}: {
+  item: IncidentEvidence;
+  loadingEvidenceId: string | null;
+  onOpen: (item: IncidentEvidence) => void;
+}) {
+  return (
+    <article style={styles.evidenceItem}>
+      <p
+        style={{
+          margin: "0 0 6px",
+          color: "#001e3b",
+          fontWeight: 800,
+          wordBreak: "break-word",
+        }}
+      >
+        {item.originalFileName}
+      </p>
+
+      <p
+        style={{
+          margin: "0 0 8px",
+          color: "#53657a",
+          fontSize: "13px",
+          lineHeight: 1.5,
+        }}
+      >
+        {item.contentType} · {formatBytes(item.fileSizeBytes)} · uploaded{" "}
+        {formatDate(item.uploadedUtc)} · {formatCode(item.uploadedByType)}
+      </p>
+
+      <p
+        style={{
+          margin: "0 0 12px",
+          color: "#004578",
+          fontSize: "12px",
+          fontFamily:
+            "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+          wordBreak: "break-word",
+        }}
+      >
+        SHA-256: {shortHash(item.sha256Hash)}
+      </p>
+
+      <button
+        type="button"
+        onClick={() => onOpen(item)}
+        disabled={loadingEvidenceId === item.evidenceId}
+        style={styles.secondaryButton}
+      >
+        {loadingEvidenceId === item.evidenceId ? "Opening..." : "Open evidence"}
+      </button>
+    </article>
+  );
+}
+
+function EvidencePreview({
+  imageUrl,
+  imageName,
+  onClose,
+}: {
+  imageUrl: string;
+  imageName: string | null;
+  onClose: () => void;
+}) {
+  return (
+    <div style={styles.evidencePreview}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          gap: "12px",
+          alignItems: "center",
+          marginBottom: "12px",
+        }}
+      >
+        <div>
+          <p
+            style={{
+              margin: 0,
+              color: "#004578",
+              fontSize: "12px",
+              fontWeight: 800,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+            }}
+          >
+            Evidence preview
+          </p>
+
+          <p
+            style={{
+              margin: "4px 0 0",
+              color: "#001e3b",
+              fontWeight: 800,
+              wordBreak: "break-word",
+            }}
+          >
+            {imageName ?? "Uploaded evidence"}
+          </p>
+        </div>
+
+        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+          <a
+            href={imageUrl}
+            target="_blank"
+            rel="noreferrer"
+            style={styles.secondaryButton}
+          >
+            Open in new tab
+          </a>
+
+          <button type="button" onClick={onClose} style={styles.secondaryButton}>
+            Close
+          </button>
+        </div>
+      </div>
+
+      <img
+        src={imageUrl}
+        alt={imageName ?? "Uploaded evidence preview"}
+        style={styles.evidenceImage}
+      />
+    </div>
   );
 }
 
