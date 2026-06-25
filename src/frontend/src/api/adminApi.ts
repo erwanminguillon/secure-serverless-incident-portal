@@ -273,6 +273,7 @@ export async function listIncidentComments(
   );
 }
 
+
 /* ========================= EVIDENCE ========================= */
 
 export type IncidentEvidence = {
@@ -295,7 +296,7 @@ export async function listIncidentEvidence(
   incidentId: string
 ): Promise<AdminIncidentEvidenceListResponse> {
   return adminApiRequest<AdminIncidentEvidenceListResponse>(
-    `/admin/incidents/${encodeURIComponent(incidentId)}/evidence`,
+    `/internal/incidents/${encodeURIComponent(incidentId)}/evidence`,
     {
       method: "GET",
     }
@@ -306,7 +307,7 @@ export async function getIncidentEvidenceContent(
   evidenceId: string
 ): Promise<Blob> {
   return adminBlobRequest(
-    `/admin/evidence/${encodeURIComponent(evidenceId)}/content`,
+    `/internal/evidence/${encodeURIComponent(evidenceId)}/content`,
     {
       method: "GET",
     }

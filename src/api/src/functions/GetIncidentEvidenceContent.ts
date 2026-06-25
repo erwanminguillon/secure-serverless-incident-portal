@@ -121,6 +121,6 @@ export async function getIncidentEvidenceContent(
 app.http("GetIncidentEvidenceContent", {
   methods: ["GET"],
   authLevel: "anonymous",
-  route: "admin/evidence/{evidenceId}/content",
+  route: "internal/evidence/{evidenceId}/content",
   handler: getIncidentEvidenceContent,
 });

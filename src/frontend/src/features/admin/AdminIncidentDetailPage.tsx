@@ -380,48 +380,50 @@ export function AdminIncidentDetailPage() {
   }
 
   async function loadPage() {
-    if (!incidentId) {
-      setError("Incident ID is missing from the route.");
-      setLoading(false);
-      return;
-    }
+  if (!incidentId) {
+    setError("Incident ID is missing from the route.");
+    setLoading(false);
+    return;
+  }
 
-    try {
-      setLoading(true);
-      setLoadStartedAt(Date.now());
-      setError(null);
+  try {
+    setLoading(true);
+    setLoadStartedAt(Date.now());
+    setError(null);
 
-      const identity = await getAdminMe();
-      setAdminSession(identity.principalName);
+    const identity = await getAdminMe();
+    setAdminSession(identity.principalName);
 
-      const [
-        incidentResponse,
-        referenceResponse,
-        commentsResponse,
-        evidenceResponse,
-      ] = await Promise.all([
+    const [incidentResponse, referenceResponse, commentsResponse] =
+      await Promise.all([
         getIncidentById(incidentId),
         getReferenceData(),
         listIncidentComments(incidentId),
-        listIncidentEvidence(incidentId),
       ]);
 
-      setIncident(incidentResponse);
-      setReferenceData(referenceResponse);
-      setComments(commentsResponse.items);
+    setIncident(incidentResponse);
+    setReferenceData(referenceResponse);
+    setComments(commentsResponse.items);
+    setStatusCode(incidentResponse.statusCode);
+    setSeverityCode(incidentResponse.severityCode);
+    setAssignedReviewerDisplayName(
+      incidentResponse.assignedReviewerDisplayName ?? ""
+    );
+
+    try {
+      const evidenceResponse = await listIncidentEvidence(incidentId);
       setEvidence(evidenceResponse.items);
-      setStatusCode(incidentResponse.statusCode);
-      setSeverityCode(incidentResponse.severityCode);
-      setAssignedReviewerDisplayName(
-        incidentResponse.assignedReviewerDisplayName ?? ""
-      );
-    } catch (err) {
-      handleApiError(err);
-    } finally {
-      setLoading(false);
-      setLoadStartedAt(null);
+    } catch (evidenceErr) {
+      setEvidence([]);
+      console.warn("Evidence could not be loaded.", evidenceErr);
     }
+  } catch (err) {
+    handleApiError(err);
+  } finally {
+    setLoading(false);
+    setLoadStartedAt(null);
   }
+}
 
   function handleApiError(err: unknown) {
     const errorWithStatus = err as Error & {

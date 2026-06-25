@@ -175,7 +175,7 @@ export function AdminLoginPage() {
           {loading && (
             <LoadingBanner
               title="Verifying admin access"
-              message="SSIP is validating the admin key and preparing the protected dashboard session."
+              message="Please wait."
             />
           )}
 
