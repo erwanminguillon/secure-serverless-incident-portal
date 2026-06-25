@@ -83,6 +83,42 @@
   letter-spacing: 0.06em;
 }
 
+.ssip-login-preview {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.ssip-login-preview-kpis {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ssip-login-preview-card {
+  border: 1px solid #c7e0f4;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.ssip-login-preview-panel {
+  border: 1px solid #c7e0f4;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.ssip-login-preview-row {
+  display: grid;
+  grid-template-columns: 1.5fr 0.8fr 0.8fr;
+  gap: 10px;
+}
+
 @media (max-width: 768px) {
   .ssip-loading-banner {
     align-items: stretch;
@@ -91,5 +127,13 @@
 
   .ssip-loading-timer {
     width: 100%;
+  }
+
+  .ssip-login-preview-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .ssip-login-preview-row {
+    grid-template-columns: 1fr;
   }
 }

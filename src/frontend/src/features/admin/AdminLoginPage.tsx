@@ -3,7 +3,11 @@ import type { FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { adminLogin } from "../../api/adminApi";
-import { LoadingBanner } from "../../components/Skeleton";
+import {
+  LoadingBanner,
+  SkeletonBlock,
+  SkeletonText,
+} from "../../components/Skeleton";
 import { clearAdminSession, setAdminSession } from "./adminSession";
 
 export function AdminLoginPage() {
@@ -173,13 +177,17 @@ export function AdminLoginPage() {
           </h3>
 
           {loading && (
-            <LoadingBanner
-              title="Verifying admin access"
-              message="SSIP is validating the admin key and preparing the protected dashboard session."
-            />
+            <>
+              <LoadingBanner
+                title="Verifying admin access"
+                message="SSIP is validating the admin key and preparing the protected dashboard session."
+              />
+
+              <AdminLoginSkeletonPreview />
+            </>
           )}
 
-          {error && (
+          {!loading && error && (
             <div
               className="ssip-alert ssip-alert-error"
               style={{ marginBottom: "18px" }}
@@ -188,56 +196,93 @@ export function AdminLoginPage() {
             </div>
           )}
 
-          <div style={{ display: "grid", gap: "16px" }}>
-            <div>
-              <label className="ssip-label" htmlFor="adminName">
-                Display name
-              </label>
-              <input
-                id="adminName"
-                className="ssip-field"
-                value={adminName}
-                onChange={(event) => setAdminName(event.target.value)}
-                placeholder="Display name"
-                disabled={loading}
-              />
-              <p className="ssip-help-text" style={{ margin: "6px 0 0" }}>
-                This name is used when creating internal comments.
-              </p>
-            </div>
+          {!loading && (
+            <div style={{ display: "grid", gap: "16px" }}>
+              <div>
+                <label className="ssip-label" htmlFor="adminName">
+                  Display name
+                </label>
+                <input
+                  id="adminName"
+                  className="ssip-field"
+                  value={adminName}
+                  onChange={(event) => setAdminName(event.target.value)}
+                  placeholder="Display name"
+                  disabled={loading}
+                />
+                <p className="ssip-help-text" style={{ margin: "6px 0 0" }}>
+                  This name is used when creating internal comments.
+                </p>
+              </div>
 
-            <div>
-              <label className="ssip-label" htmlFor="adminKey">
-                Admin key
-              </label>
-              <input
-                id="adminKey"
-                className="ssip-field"
-                type="password"
-                value={adminKey}
-                onChange={(event) => setAdminKey(event.target.value)}
-                placeholder="Key"
-                autoComplete="off"
-                disabled={loading}
-              />
-            </div>
+              <div>
+                <label className="ssip-label" htmlFor="adminKey">
+                  Admin key
+                </label>
+                <input
+                  id="adminKey"
+                  className="ssip-field"
+                  type="password"
+                  value={adminKey}
+                  onChange={(event) => setAdminKey(event.target.value)}
+                  placeholder="Key"
+                  autoComplete="off"
+                  disabled={loading}
+                />
+              </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="ssip-button ssip-button-primary"
-              style={{
-                width: "100%",
-                marginTop: "4px",
-                padding: "11px 14px",
-              }}
-            >
-              {loading ? "Signing in..." : "Continue to dashboard"}
-            </button>
-          </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="ssip-button ssip-button-primary"
+                style={{
+                  width: "100%",
+                  marginTop: "4px",
+                  padding: "11px 14px",
+                }}
+              >
+                Continue to dashboard
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </section>
+  );
+}
+
+function AdminLoginSkeletonPreview() {
+  return (
+    <div className="ssip-login-preview" aria-hidden="true">
+      <div className="ssip-login-preview-kpis">
+        <div className="ssip-login-preview-card">
+          <SkeletonBlock width="55%" height="12px" />
+          <SkeletonBlock width="38%" height="30px" borderRadius="10px" />
+        </div>
+
+        <div className="ssip-login-preview-card">
+          <SkeletonBlock width="60%" height="12px" />
+          <SkeletonBlock width="46%" height="30px" borderRadius="10px" />
+        </div>
+      </div>
+
+      <div className="ssip-login-preview-panel">
+        <SkeletonBlock width="42%" height="13px" />
+        <SkeletonBlock width="100%" height="38px" borderRadius="9px" />
+
+        <div style={{ display: "grid", gap: "10px", marginTop: "4px" }}>
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div className="ssip-login-preview-row" key={index}>
+              <SkeletonBlock height="28px" borderRadius="8px" />
+              <SkeletonBlock height="28px" borderRadius="8px" />
+              <SkeletonBlock height="28px" borderRadius="8px" />
+            </div>
+          ))}
+        </div>
+
+        <SkeletonText lines={2} />
+      </div>
+    </div>
   );
 }
 
