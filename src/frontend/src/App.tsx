@@ -42,10 +42,7 @@ function App() {
 
             <Route path="/admin" element={<AdminLoginPage />} />
             <Route path="/admin/incidents" element={<AdminIncidentListPage />} />
-            <Route
-              path="/admin/incidents/:incidentId"
-              element={<AdminIncidentDetailPage />}
-            />
+            <Route path="/admin/incidents/:incidentId" element={<AdminIncidentDetailPage />} />
           </Routes>
         </main>
       </div>
