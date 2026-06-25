@@ -194,7 +194,7 @@ export type UpdateIncidentResponse = {
 };
 
 export async function listIncidents(): Promise<AdminIncidentListResponse> {
-  return adminApiRequest<AdminIncidentListResponse>("/admin/incidents", {
+  return adminApiRequest<AdminIncidentListResponse>("/internal/incidents", {
     method: "GET",
   });
 }
@@ -203,7 +203,7 @@ export async function getIncidentById(
   incidentId: string
 ): Promise<IncidentDetail> {
   return adminApiRequest<IncidentDetail>(
-    `/admin/incidents/${encodeURIComponent(incidentId)}`,
+    `/internal/incidents/${encodeURIComponent(incidentId)}`,
     {
       method: "GET",
     }
@@ -215,7 +215,7 @@ export async function updateIncident(
   input: UpdateIncidentRequest
 ): Promise<UpdateIncidentResponse> {
   return adminApiRequest<UpdateIncidentResponse>(
-    `/admin/incidents/${encodeURIComponent(incidentId)}`,
+    `/internal/incidents/${encodeURIComponent(incidentId)}`,
     {
       method: "PATCH",
       body: JSON.stringify(input),
@@ -252,7 +252,7 @@ export async function addIncidentComment(
   commentText: string
 ): Promise<AddIncidentCommentResponse> {
   return adminApiRequest<AddIncidentCommentResponse>(
-    `/admin/incidents/${encodeURIComponent(incidentId)}/comments`,
+    `/internal/incidents/${encodeURIComponent(incidentId)}/comments`,
     {
       method: "POST",
       body: JSON.stringify({
@@ -266,7 +266,7 @@ export async function listIncidentComments(
   incidentId: string
 ): Promise<IncidentCommentListResponse> {
   return adminApiRequest<IncidentCommentListResponse>(
-    `/admin/incidents/${encodeURIComponent(incidentId)}/comments`,
+    `/internal/incidents/${encodeURIComponent(incidentId)}/comments`,
     {
       method: "GET",
     }
@@ -330,7 +330,7 @@ export type ReferenceData = {
 };
 
 export async function getReferenceData(): Promise<ReferenceData> {
-  return adminApiRequest<ReferenceData>("/reference-data", {
+  return adminApiRequest<ReferenceData>("/internal/reference-data", {
     method: "GET",
   });
 }

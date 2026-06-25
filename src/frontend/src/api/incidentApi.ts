@@ -105,7 +105,7 @@ export type SubmitIncidentResponse = {
 export async function submitIncident(
   input: SubmitIncidentRequest
 ): Promise<SubmitIncidentResponse> {
-  return publicApiRequest<SubmitIncidentResponse>("/incidents", {
+  return publicApiRequest<SubmitIncidentResponse>("/public/incidents", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -123,7 +123,7 @@ export type TrackIncidentResponse = DomainTrackIncidentResponse;
 export async function trackIncident(
   input: TrackIncidentRequest
 ): Promise<TrackIncidentResponse> {
-  return publicApiRequest<TrackIncidentResponse>("/incidents/track", {
+  return publicApiRequest<TrackIncidentResponse>("/public/incidents/track", {
     method: "POST",
     body: JSON.stringify({
       publicId: input.publicId,
