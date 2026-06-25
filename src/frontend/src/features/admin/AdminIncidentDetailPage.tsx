@@ -7,14 +7,17 @@ import {
   adminLogout,
   getAdminMe,
   getIncidentById,
+  getIncidentEvidenceContent,
   getReferenceData,
   listIncidentComments,
+  listIncidentEvidence,
   updateIncident,
 } from "../../api/adminApi";
 
 import type {
   IncidentComment,
   IncidentDetail,
+  IncidentEvidence,
   ReferenceData,
 } from "../../api/adminApi";
 
@@ -194,6 +197,29 @@ const styles: Record<string, CSSProperties> = {
     background: "#ffffff",
     padding: "14px",
   },
+  evidenceItem: {
+    border: "1px solid var(--ssip-border)",
+    borderLeft: "4px solid #0078d4",
+    borderRadius: "10px",
+    background: "#ffffff",
+    padding: "14px",
+  },
+  evidencePreview: {
+    marginTop: "16px",
+    border: "1px solid var(--ssip-border)",
+    borderRadius: "12px",
+    background: "#f8fbfe",
+    padding: "14px",
+  },
+  evidenceImage: {
+    display: "block",
+    width: "100%",
+    maxHeight: "640px",
+    objectFit: "contain",
+    border: "1px solid var(--ssip-border)",
+    borderRadius: "10px",
+    background: "#ffffff",
+  },
 };
 
 function formatCode(value: string | null | undefined): string {
@@ -210,6 +236,30 @@ function formatDate(value: string | null | undefined): string {
   }
 
   return new Date(value).toLocaleString();
+}
+
+function formatBytes(value: number): string {
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function shortHash(value: string): string {
+  if (!value) {
+    return "Unknown";
+  }
+
+  if (value.length <= 16) {
+    return value;
+  }
+
+  return `${value.slice(0, 12)}...${value.slice(-8)}`;
 }
 
 function badgeStyle(kind: "status" | "severity", value: string): CSSProperties {
@@ -268,6 +318,7 @@ export function AdminIncidentDetailPage() {
   const [incident, setIncident] = useState<IncidentDetail | null>(null);
   const [referenceData, setReferenceData] = useState<ReferenceData | null>(null);
   const [comments, setComments] = useState<IncidentComment[]>([]);
+  const [evidence, setEvidence] = useState<IncidentEvidence[]>([]);
 
   const [statusCode, setStatusCode] = useState("");
   const [severityCode, setSeverityCode] = useState("");
@@ -283,9 +334,49 @@ export function AdminIncidentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
+  const [activeEvidenceUrl, setActiveEvidenceUrl] = useState<string | null>(
+    null
+  );
+  const [activeEvidenceName, setActiveEvidenceName] = useState<string | null>(
+    null
+  );
+  const [loadingEvidenceId, setLoadingEvidenceId] = useState<string | null>(
+    null
+  );
+
+  useEffect(() => {
+    loadPage();
+  }, [incidentId]);
+
+  useEffect(() => {
+    if (!loading || loadStartedAt === null) {
+      setElapsedSeconds(0);
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setElapsedSeconds(Math.floor((Date.now() - loadStartedAt) / 1000));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [loading, loadStartedAt]);
+
+  useEffect(() => {
+    return () => {
+      if (activeEvidenceUrl) {
+        URL.revokeObjectURL(activeEvidenceUrl);
+      }
+    };
+  }, [activeEvidenceUrl]);
+
   async function loadComments(targetIncidentId: string) {
     const response = await listIncidentComments(targetIncidentId);
     setComments(response.items);
+  }
+
+  async function loadEvidence(targetIncidentId: string) {
+    const response = await listIncidentEvidence(targetIncidentId);
+    setEvidence(response.items);
   }
 
   async function loadPage() {
@@ -303,16 +394,22 @@ export function AdminIncidentDetailPage() {
       const identity = await getAdminMe();
       setAdminSession(identity.principalName);
 
-      const [incidentResponse, referenceResponse, commentsResponse] =
-        await Promise.all([
-          getIncidentById(incidentId),
-          getReferenceData(),
-          listIncidentComments(incidentId),
-        ]);
+      const [
+        incidentResponse,
+        referenceResponse,
+        commentsResponse,
+        evidenceResponse,
+      ] = await Promise.all([
+        getIncidentById(incidentId),
+        getReferenceData(),
+        listIncidentComments(incidentId),
+        listIncidentEvidence(incidentId),
+      ]);
 
       setIncident(incidentResponse);
       setReferenceData(referenceResponse);
       setComments(commentsResponse.items);
+      setEvidence(evidenceResponse.items);
       setStatusCode(incidentResponse.statusCode);
       setSeverityCode(incidentResponse.severityCode);
       setAssignedReviewerDisplayName(
@@ -346,23 +443,6 @@ export function AdminIncidentDetailPage() {
       }`
     );
   }
-
-  useEffect(() => {
-    loadPage();
-  }, [incidentId]);
-
-  useEffect(() => {
-    if (!loading || loadStartedAt === null) {
-      setElapsedSeconds(0);
-      return;
-    }
-
-    const intervalId = window.setInterval(() => {
-      setElapsedSeconds(Math.floor((Date.now() - loadStartedAt) / 1000));
-    }, 1000);
-
-    return () => window.clearInterval(intervalId);
-  }, [loading, loadStartedAt]);
 
   async function handleUpdateSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -419,6 +499,49 @@ export function AdminIncidentDetailPage() {
     }
   }
 
+  async function handleRefreshEvidence() {
+    if (!incidentId) {
+      return;
+    }
+
+    try {
+      setError(null);
+      await loadEvidence(incidentId);
+    } catch (err) {
+      handleApiError(err);
+    }
+  }
+
+  async function handleOpenEvidence(item: IncidentEvidence) {
+    try {
+      setError(null);
+      setLoadingEvidenceId(item.evidenceId);
+
+      const blob = await getIncidentEvidenceContent(item.evidenceId);
+      const objectUrl = URL.createObjectURL(blob);
+
+      if (activeEvidenceUrl) {
+        URL.revokeObjectURL(activeEvidenceUrl);
+      }
+
+      setActiveEvidenceUrl(objectUrl);
+      setActiveEvidenceName(item.originalFileName);
+    } catch (err) {
+      handleApiError(err);
+    } finally {
+      setLoadingEvidenceId(null);
+    }
+  }
+
+  function handleCloseEvidencePreview() {
+    if (activeEvidenceUrl) {
+      URL.revokeObjectURL(activeEvidenceUrl);
+    }
+
+    setActiveEvidenceUrl(null);
+    setActiveEvidenceName(null);
+  }
+
   async function handleLogout() {
     try {
       await adminLogout();
@@ -465,7 +588,10 @@ export function AdminIncidentDetailPage() {
           <p style={styles.subtitle}>Incident ID: {incident.incidentId}</p>
         </div>
 
-        <div className="ssip-admin-actions" style={{ display: "flex", gap: "10px" }}>
+        <div
+          className="ssip-admin-actions"
+          style={{ display: "flex", gap: "10px" }}
+        >
           <Link to="/admin/incidents" style={styles.secondaryButton}>
             Back to incidents
           </Link>
@@ -496,7 +622,10 @@ export function AdminIncidentDetailPage() {
                 </span>
               </Meta>
 
-              <Meta label="Report type" value={formatCode(incident.reportTypeCode)} />
+              <Meta
+                label="Report type"
+                value={formatCode(incident.reportTypeCode)}
+              />
               <Meta label="Category" value={formatCode(incident.categoryCode)} />
               <Meta label="Anonymous" value={incident.isAnonymous ? "Yes" : "No"} />
               <Meta
@@ -513,6 +642,140 @@ export function AdminIncidentDetailPage() {
                 {incident.description || "No description provided."}
               </p>
             </div>
+          </section>
+
+          <section style={styles.card}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "12px",
+                alignItems: "center",
+                marginBottom: "14px",
+              }}
+            >
+              <h3 style={{ ...styles.cardTitle, margin: 0 }}>Evidence</h3>
+
+              <button
+                type="button"
+                onClick={handleRefreshEvidence}
+                style={styles.secondaryButton}
+              >
+                Refresh evidence
+              </button>
+            </div>
+
+            {evidence.length === 0 && (
+              <div style={styles.emptyState}>
+                No evidence screenshots have been uploaded for this incident.
+              </div>
+            )}
+
+            {evidence.length > 0 && (
+              <div style={{ display: "grid", gap: "12px" }}>
+                {evidence.map((item) => (
+                  <article key={item.evidenceId} style={styles.evidenceItem}>
+                    <p
+                      style={{
+                        margin: "0 0 6px",
+                        color: "#001e3b",
+                        fontWeight: 800,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {item.originalFileName}
+                    </p>
+
+                    <p
+                      style={{
+                        margin: "0 0 8px",
+                        color: "#53657a",
+                        fontSize: "13px",
+                        lineHeight: 1.5,
+                      }}
+                    >
+                      {item.contentType} · {formatBytes(item.fileSizeBytes)} ·
+                      uploaded {formatDate(item.uploadedUtc)} ·{" "}
+                      {formatCode(item.uploadedByType)}
+                    </p>
+
+                    <p
+                      style={{
+                        margin: "0 0 12px",
+                        color: "#004578",
+                        fontSize: "12px",
+                        fontFamily:
+                          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      SHA-256: {shortHash(item.sha256Hash)}
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEvidence(item)}
+                      disabled={loadingEvidenceId === item.evidenceId}
+                      style={styles.secondaryButton}
+                    >
+                      {loadingEvidenceId === item.evidenceId
+                        ? "Opening..."
+                        : "Open evidence"}
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
+
+            {activeEvidenceUrl && (
+              <div style={styles.evidencePreview}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: "12px",
+                    alignItems: "center",
+                    marginBottom: "12px",
+                  }}
+                >
+                  <div>
+                    <p
+                      style={{
+                        margin: 0,
+                        color: "#004578",
+                        fontSize: "12px",
+                        fontWeight: 800,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.08em",
+                      }}
+                    >
+                      Evidence preview
+                    </p>
+
+                    <p
+                      style={{
+                        margin: "4px 0 0",
+                        color: "#001e3b",
+                        fontWeight: 800,
+                        wordBreak: "break-word",
+                      }}
+                    >
+                      {activeEvidenceName ?? "Uploaded evidence"}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleCloseEvidencePreview}
+                    style={styles.secondaryButton}
+                  >
+                    Close
+                  </button>
+                </div>
+
+                {activeEvidenceUrl}
+              </div>
+            )}
           </section>
 
           <section style={styles.card}>

@@ -1,4 +1,5 @@
 import crypto from "crypto";
+
 import type {
   AdminIncidentListResponse,
   CreateIncidentRequest,
@@ -18,10 +19,21 @@ import type {
 import type {
   AdminIncidentEvidenceListResponse,
   IncidentEvidence,
-  UploadEvidenceResponse,
 } from "../models/IncidentEvidence";
 
 import { getSqlPool, sql } from "./sqlClient";
+
+type CreateIncidentEvidenceMetadataInput = {
+  evidenceId: string;
+  incidentId: string;
+  originalFileName: string;
+  blobName: string;
+  contentType: string;
+  fileSizeBytes: number;
+  sha256Hash: string;
+  uploadedByType: "public-reporter" | "admin";
+  uploadedUtc: Date;
+};
 
 function generatePublicId(sequence: number): string {
   return `INC-2026-${("000000" + sequence).slice(-6)}`;
@@ -75,6 +87,20 @@ function mapIncidentComment(row: any): IncidentComment {
     createdById: row.CreatedById,
     createdByDisplayName: row.CreatedByDisplayName,
     createdUtc: toIso(row.CreatedUtc),
+  };
+}
+
+function mapIncidentEvidence(row: any): IncidentEvidence {
+  return {
+    evidenceId: row.EvidenceId,
+    incidentId: row.IncidentId,
+    originalFileName: row.OriginalFileName,
+    blobName: row.BlobName,
+    contentType: row.ContentType,
+    fileSizeBytes: Number(row.FileSizeBytes),
+    sha256Hash: row.Sha256Hash,
+    uploadedByType: row.UploadedByType,
+    uploadedUtc: toIso(row.UploadedUtc),
   };
 }
 
@@ -213,6 +239,29 @@ export async function trackIncident(
     submittedUtc: toIso(row.SubmittedUtc),
     lastUpdatedUtc: toIso(row.UpdatedUtc),
   };
+}
+
+export async function getIncidentByPublicIdAndTrackingToken(
+  publicId: string,
+  trackingToken: string
+): Promise<Incident | null> {
+  const pool = await getSqlPool();
+  const trackingTokenHash = hashTrackingToken(trackingToken);
+
+  const result = await pool
+    .request()
+    .input("PublicId", sql.NVarChar(50), publicId)
+    .input("TrackingTokenHash", sql.NVarChar(128), trackingTokenHash)
+    .query(`
+      SELECT TOP 1 *
+      FROM dbo.Incident
+      WHERE PublicId = @PublicId
+        AND TrackingTokenHash = @TrackingTokenHash
+    `);
+
+  const row = result.recordset[0];
+
+  return row ? mapIncident(row) : null;
 }
 
 /* ========================= LIST ========================= */
@@ -465,6 +514,7 @@ export async function addIncidentComment(
     createdUtc: now.toISOString(),
   };
 }
+
 export async function listIncidentComments(
   incidentId: string
 ): Promise<{ items: IncidentComment[] }> {
@@ -497,43 +547,144 @@ export async function listIncidentComments(
   };
 }
 
+/* ========================= EVIDENCE ========================= */
 
-/* ========================= EVIDENCE STUBS ========================= */
-
-export async function uploadEvidence(
-  publicId: string
-): Promise<UploadEvidenceResponse | null> {
+export async function countEvidenceByIncidentId(
+  incidentId: string
+): Promise<number> {
   const pool = await getSqlPool();
 
   const result = await pool
     .request()
-    .input("PublicId", sql.NVarChar(50), publicId)
+    .input("IncidentId", sql.UniqueIdentifier, incidentId)
     .query(`
-      SELECT TOP 1 IncidentId, PublicId
-      FROM dbo.Incident
-      WHERE PublicId = @PublicId
+      SELECT COUNT(*) AS EvidenceCount
+      FROM dbo.IncidentEvidence
+      WHERE IncidentId = @IncidentId
+    `);
+
+  return Number(result.recordset[0]?.EvidenceCount ?? 0);
+}
+
+export async function createIncidentEvidenceMetadata(
+  input: CreateIncidentEvidenceMetadataInput
+): Promise<IncidentEvidence> {
+  const pool = await getSqlPool();
+
+  await pool
+    .request()
+    .input("EvidenceId", sql.UniqueIdentifier, input.evidenceId)
+    .input("IncidentId", sql.UniqueIdentifier, input.incidentId)
+    .input("OriginalFileName", sql.NVarChar(260), input.originalFileName)
+    .input("BlobName", sql.NVarChar(500), input.blobName)
+    .input("ContentType", sql.NVarChar(100), input.contentType)
+    .input("FileSizeBytes", sql.BigInt, input.fileSizeBytes)
+    .input("Sha256Hash", sql.NVarChar(128), input.sha256Hash)
+    .input("UploadedByType", sql.NVarChar(50), input.uploadedByType)
+    .input("UploadedUtc", sql.DateTime2, input.uploadedUtc)
+    .query(`
+      INSERT INTO dbo.IncidentEvidence (
+        EvidenceId,
+        IncidentId,
+        OriginalFileName,
+        BlobName,
+        ContentType,
+        FileSizeBytes,
+        Sha256Hash,
+        UploadedByType,
+        UploadedUtc
+      )
+      VALUES (
+        @EvidenceId,
+        @IncidentId,
+        @OriginalFileName,
+        @BlobName,
+        @ContentType,
+        @FileSizeBytes,
+        @Sha256Hash,
+        @UploadedByType,
+        @UploadedUtc
+      )
+    `);
+
+  return {
+    evidenceId: input.evidenceId,
+    incidentId: input.incidentId,
+    originalFileName: input.originalFileName,
+    blobName: input.blobName,
+    contentType: input.contentType,
+    fileSizeBytes: input.fileSizeBytes,
+    sha256Hash: input.sha256Hash,
+    uploadedByType: input.uploadedByType,
+    uploadedUtc: input.uploadedUtc.toISOString(),
+  };
+}
+
+export async function getEvidenceByEvidenceId(
+  evidenceId: string
+): Promise<IncidentEvidence | null> {
+  const pool = await getSqlPool();
+
+  const result = await pool
+    .request()
+    .input("EvidenceId", sql.UniqueIdentifier, evidenceId)
+    .query(`
+      SELECT TOP 1
+        EvidenceId,
+        IncidentId,
+        OriginalFileName,
+        BlobName,
+        ContentType,
+        FileSizeBytes,
+        Sha256Hash,
+        UploadedByType,
+        UploadedUtc
+      FROM dbo.IncidentEvidence
+      WHERE EvidenceId = @EvidenceId
     `);
 
   const row = result.recordset[0];
-  if (!row) {
-    return null;
+
+  return row ? mapIncidentEvidence(row) : null;
+}
+
+export async function listEvidenceByIncidentId(
+  incidentId: string
+): Promise<AdminIncidentEvidenceListResponse> {
+  const pool = await getSqlPool();
+
+  const incident = await getIncidentById(incidentId);
+
+  if (!incident) {
+    return { items: [] };
   }
 
-  const now = new Date().toISOString();
+  const result = await pool
+    .request()
+    .input("IncidentId", sql.UniqueIdentifier, incidentId)
+    .query(`
+      SELECT
+        EvidenceId,
+        IncidentId,
+        OriginalFileName,
+        BlobName,
+        ContentType,
+        FileSizeBytes,
+        Sha256Hash,
+        UploadedByType,
+        UploadedUtc
+      FROM dbo.IncidentEvidence
+      WHERE IncidentId = @IncidentId
+      ORDER BY UploadedUtc DESC
+    `);
 
   return {
-    evidenceId: crypto.randomUUID(),
-    publicId: row.PublicId,
-    originalFileName: "placeholder-evidence.png",
-    contentType: "image/png",
-    fileSizeBytes: 0,
-    uploadedUtc: now,
+    items: result.recordset.map(mapIncidentEvidence),
   };
 }
 
 export async function getEvidenceByIncidentId(
   incidentId: string
 ): Promise<AdminIncidentEvidenceListResponse> {
-  const items: IncidentEvidence[] = [];
-  return { items };
+  return listEvidenceByIncidentId(incidentId);
 }

@@ -14,6 +14,8 @@
   },
   "dependencies": {
     "@azure/functions": "^4.16.0",
+    "@azure/storage-blob": "^12.33.0",
+    "@typespec/ts-http-runtime": "^0.3.6",
     "mssql": "^12.5.4"
   },
   "devDependencies": {

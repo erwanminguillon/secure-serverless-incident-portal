@@ -1,7 +1,15 @@
 import { useEffect, useState } from "react";
-import type { FormEvent } from "react";
+import type { ChangeEvent, FormEvent } from "react";
 
-import { submitIncident } from "../api/incidentApi";
+import {
+  submitIncident,
+  uploadEvidence,
+} from "../api/incidentApi";
+
+import type {
+  UploadEvidenceResponse,
+} from "../api/incidentApi";
+
 import type {
   CategoryCode,
   ReportTypeCode,
@@ -14,6 +22,8 @@ import {
   SkeletonCard,
   SkeletonText,
 } from "../components/Skeleton";
+
+const MAX_EVIDENCE_FILES_PER_INCIDENT = 3;
 
 const categories: Array<{ value: CategoryCode | ""; label: string }> = [
   { value: "", label: "No category" },
@@ -49,6 +59,14 @@ export default function SubmitIncidentPage() {
   const [submitStartedAt, setSubmitStartedAt] = useState<number | null>(null);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
+  const [selectedEvidenceFiles, setSelectedEvidenceFiles] = useState<File[]>([]);
+  const [uploadedEvidence, setUploadedEvidence] = useState<
+    UploadEvidenceResponse[]
+  >([]);
+  const [evidenceError, setEvidenceError] = useState("");
+  const [evidenceSuccess, setEvidenceSuccess] = useState("");
+  const [evidenceUploading, setEvidenceUploading] = useState(false);
+
   useEffect(() => {
     if (!loading || submitStartedAt === null) {
       setElapsedSeconds(0);
@@ -73,6 +91,10 @@ export default function SubmitIncidentPage() {
     setPublicId("");
     setTrackingToken("");
     setSuccessMessage("");
+    setSelectedEvidenceFiles([]);
+    setUploadedEvidence([]);
+    setEvidenceError("");
+    setEvidenceSuccess("");
     setSubmitStartedAt(Date.now());
     setLoading(true);
 
@@ -107,6 +129,81 @@ export default function SubmitIncidentPage() {
       setSubmitStartedAt(null);
     }
   }
+
+  function handleEvidenceFileChange(event: ChangeEvent<HTMLInputElement>) {
+    setEvidenceError("");
+    setEvidenceSuccess("");
+
+    const files = Array.from(event.target.files ?? []);
+
+    if (files.length === 0) {
+      setSelectedEvidenceFiles([]);
+      return;
+    }
+
+    const remainingSlots =
+      MAX_EVIDENCE_FILES_PER_INCIDENT - uploadedEvidence.length;
+
+    if (files.length > remainingSlots) {
+      setSelectedEvidenceFiles([]);
+      event.target.value = "";
+      setEvidenceError(
+        `You can attach up to ${MAX_EVIDENCE_FILES_PER_INCIDENT} screenshots per incident. ${remainingSlots} slot${remainingSlots === 1 ? "" : "s"} remaining.`
+      );
+      return;
+    }
+
+    setSelectedEvidenceFiles(files);
+  }
+
+  async function handleEvidenceUpload() {
+    if (!publicId || !trackingToken) {
+      setEvidenceError("Submit the incident before uploading evidence.");
+      return;
+    }
+
+    if (selectedEvidenceFiles.length === 0) {
+      setEvidenceError("Select at least one screenshot to upload.");
+      return;
+    }
+
+    setEvidenceUploading(true);
+    setEvidenceError("");
+    setEvidenceSuccess("");
+
+    const uploaded: UploadEvidenceResponse[] = [];
+
+    try {
+      for (const file of selectedEvidenceFiles) {
+        const response = await uploadEvidence({
+          publicId,
+          trackingToken,
+          file,
+        });
+
+        uploaded.push(response);
+      }
+
+      setUploadedEvidence((current) => [...current, ...uploaded]);
+      setSelectedEvidenceFiles([]);
+      setEvidenceSuccess(
+        uploaded.length === 1
+          ? "Screenshot uploaded successfully."
+          : `${uploaded.length} screenshots uploaded successfully.`
+      );
+    } catch (err) {
+      setEvidenceError(
+        err instanceof Error ? err.message : "Evidence upload failed."
+      );
+    } finally {
+      setEvidenceUploading(false);
+    }
+  }
+
+  const canUploadMoreEvidence =
+    publicId &&
+    trackingToken &&
+    uploadedEvidence.length < MAX_EVIDENCE_FILES_PER_INCIDENT;
 
   return (
     <section className="ssip-card" style={{ padding: "32px" }}>
@@ -176,6 +273,170 @@ export default function SubmitIncidentPage() {
             Save both values. You will need them to track this incident later.
           </p>
         </div>
+      )}
+
+      {publicId && trackingToken && (
+        <section
+          className="ssip-card"
+          style={{
+            padding: "22px",
+            marginBottom: "24px",
+            borderLeft: "6px solid #0078d4",
+          }}
+        >
+          <p
+            style={{
+              margin: 0,
+              color: "#0078d4",
+              fontSize: "12px",
+              fontWeight: 800,
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+            }}
+          >
+            Optional evidence
+          </p>
+
+          <h3 style={{ margin: "8px 0 10px", color: "#001E3B" }}>
+            Attach screenshots
+          </h3>
+
+          <p
+            style={{
+              margin: "0 0 16px",
+              color: "#53657A",
+              fontSize: "14px",
+              lineHeight: 1.6,
+            }}
+          >
+            You can attach up to {MAX_EVIDENCE_FILES_PER_INCIDENT} screenshots
+            to help reviewers understand the issue. Accepted formats are PNG,
+            JPG, JPEG, and WEBP. Maximum size is 5 MB per image.
+          </p>
+
+          {evidenceError && (
+            <div
+              className="ssip-alert ssip-alert-error"
+              style={{ marginBottom: "14px" }}
+            >
+              {evidenceError}
+            </div>
+          )}
+
+          {evidenceSuccess && (
+            <div
+              className="ssip-alert ssip-alert-success"
+              style={{ marginBottom: "14px" }}
+            >
+              {evidenceSuccess}
+            </div>
+          )}
+
+          {uploadedEvidence.length > 0 && (
+            <div style={{ display: "grid", gap: "10px", marginBottom: "16px" }}>
+              {uploadedEvidence.map((item) => (
+                <div
+                  key={item.evidenceId}
+                  style={{
+                    border: "1px solid var(--ssip-border)",
+                    borderRadius: "10px",
+                    background: "#ffffff",
+                    padding: "12px",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: "0 0 4px",
+                      color: "#001E3B",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {item.originalFileName}
+                  </p>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#53657A",
+                      fontSize: "13px",
+                    }}
+                  >
+                    {item.contentType} · {formatBytes(item.fileSizeBytes)} ·{" "}
+                    {new Date(item.uploadedUtc).toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {canUploadMoreEvidence ? (
+            <div style={{ display: "grid", gap: "14px" }}>
+              <input
+                className="ssip-field"
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                multiple
+                disabled={evidenceUploading}
+                onChange={handleEvidenceFileChange}
+              />
+
+              {selectedEvidenceFiles.length > 0 && (
+                <div
+                  style={{
+                    border: "1px solid var(--ssip-border)",
+                    borderRadius: "10px",
+                    background: "#ffffff",
+                    padding: "12px",
+                  }}
+                >
+                  <p
+                    style={{
+                      margin: "0 0 8px",
+                      color: "#004578",
+                      fontSize: "12px",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      letterSpacing: "0.08em",
+                    }}
+                  >
+                    Selected files
+                  </p>
+
+                  <ul
+                    style={{
+                      margin: 0,
+                      paddingLeft: "18px",
+                      color: "#001E3B",
+                      fontSize: "14px",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {selectedEvidenceFiles.map((file) => (
+                      <li key={`${file.name}-${file.size}`}>
+                        {file.name} · {formatBytes(file.size)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <button
+                type="button"
+                className="ssip-button ssip-button-primary"
+                disabled={
+                  evidenceUploading || selectedEvidenceFiles.length === 0
+                }
+                onClick={handleEvidenceUpload}
+                style={{ justifySelf: "start", minWidth: "180px" }}
+              >
+                {evidenceUploading ? "Uploading..." : "Upload screenshots"}
+              </button>
+            </div>
+          ) : (
+            <p style={{ margin: 0, color: "#004578", fontSize: "14px" }}>
+              Maximum number of screenshots reached for this incident.
+            </p>
+          )}
+        </section>
       )}
 
       {loading && (
@@ -446,4 +707,16 @@ function ResultValue({ label, value }: { label: string; value: string }) {
       </code>
     </div>
   );
+}
+
+function formatBytes(value: number): string {
+  if (value < 1024) {
+    return `${value} B`;
+  }
+
+  if (value < 1024 * 1024) {
+    return `${(value / 1024).toFixed(1)} KB`;
+  }
+
+  return `${(value / (1024 * 1024)).toFixed(1)} MB`;
 }

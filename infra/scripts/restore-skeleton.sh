@@ -12,6 +12,7 @@ set -euo pipefail
 # - old comments
 # - old tracking tokens
 # - old admin sessions
+# - old uploaded evidence files
 # - historical user data
 
 RESOURCE_GROUP="${RESOURCE_GROUP:-rg-ssip-dev-frc-01}"
@@ -54,6 +55,7 @@ required_sql_files=(
   "002_reference_data.sql"
   "003_indexes.sql"
   "004_admin_sessions.sql"
+  "006_incident_evidence.sql"
 )
 
 for file in "${required_sql_files[@]}"; do
@@ -198,6 +200,7 @@ run_sql_file "001_schema.sql"
 run_sql_file "002_reference_data.sql"
 run_sql_file "003_indexes.sql"
 run_sql_file "004_admin_sessions.sql"
+run_sql_file "006_incident_evidence.sql"
 
 echo ""
 echo "SQL schema initialized."
@@ -206,6 +209,18 @@ echo ""
 echo "Step 6/6: Restore completed."
 echo ""
 echo "SSIP skeleton restore completed successfully."
+echo ""
+echo "Restored SQL structure:"
+echo ""
+echo "  001_schema.sql"
+echo "  002_reference_data.sql"
+echo "  003_indexes.sql"
+echo "  004_admin_sessions.sql"
+echo "  006_incident_evidence.sql"
+echo ""
+echo "Not run automatically:"
+echo ""
+echo "  005_revoke_admin_sessions.sql"
 echo ""
 echo "Next steps:"
 echo ""
