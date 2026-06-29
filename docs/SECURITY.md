@@ -25,5 +25,4 @@ This is expected.
 
 Local backend:
 
-```text
 src/api/local.settings.json

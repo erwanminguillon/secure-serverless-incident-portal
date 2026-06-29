@@ -1,14 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ChangeEvent, FormEvent } from "react";
+import { Link } from "react-router-dom";
 
-import {
-  submitIncident,
-  uploadEvidence,
-} from "../api/incidentApi";
-
-import type {
-  UploadEvidenceResponse,
-} from "../api/incidentApi";
+import { submitIncident, uploadEvidence } from "../api/incidentApi";
+import type { UploadEvidenceResponse } from "../api/incidentApi";
 
 import type {
   CategoryCode,
@@ -38,6 +33,8 @@ const categories: Array<{ value: CategoryCode | ""; label: string }> = [
 ];
 
 export default function SubmitIncidentPage() {
+  const successRef = useRef<HTMLDivElement | null>(null);
+
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -66,6 +63,11 @@ export default function SubmitIncidentPage() {
   const [evidenceError, setEvidenceError] = useState("");
   const [evidenceSuccess, setEvidenceSuccess] = useState("");
   const [evidenceUploading, setEvidenceUploading] = useState(false);
+  const [evidenceSkipped, setEvidenceSkipped] = useState(false);
+
+  const [copyMessage, setCopyMessage] = useState("");
+
+  const hasSubmittedIncident = Boolean(publicId && trackingToken);
 
   useEffect(() => {
     if (!loading || submitStartedAt === null) {
@@ -79,6 +81,39 @@ export default function SubmitIncidentPage() {
 
     return () => window.clearInterval(intervalId);
   }, [loading, submitStartedAt]);
+
+  useEffect(() => {
+    if (!hasSubmittedIncident) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      successRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 80);
+  }, [hasSubmittedIncident]);
+
+  async function copyToClipboard(value: string, label: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopyMessage(`${label} copied to clipboard.`);
+    } catch {
+      setCopyMessage(`Could not copy ${label.toLowerCase()}. Please copy it manually.`);
+    }
+
+    window.setTimeout(() => {
+      setCopyMessage("");
+    }, 3000);
+  }
+
+  async function copyTrackingDetails() {
+    await copyToClipboard(
+      `Public ID: ${publicId}\nTracking token: ${trackingToken}`,
+      "Tracking details"
+    );
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,6 +130,8 @@ export default function SubmitIncidentPage() {
     setUploadedEvidence([]);
     setEvidenceError("");
     setEvidenceSuccess("");
+    setEvidenceSkipped(false);
+    setCopyMessage("");
     setSubmitStartedAt(Date.now());
     setLoading(true);
 
@@ -153,6 +190,7 @@ export default function SubmitIncidentPage() {
       return;
     }
 
+    setEvidenceSkipped(false);
     setSelectedEvidenceFiles(files);
   }
 
@@ -170,6 +208,7 @@ export default function SubmitIncidentPage() {
     setEvidenceUploading(true);
     setEvidenceError("");
     setEvidenceSuccess("");
+    setEvidenceSkipped(false);
 
     const uploaded: UploadEvidenceResponse[] = [];
 
@@ -200,9 +239,34 @@ export default function SubmitIncidentPage() {
     }
   }
 
+  function handleSkipEvidence() {
+    setEvidenceSkipped(true);
+    setSelectedEvidenceFiles([]);
+    setEvidenceError("");
+    setEvidenceSuccess("");
+  }
+
+  function handleSubmitAnotherIncident() {
+    setPublicId("");
+    setTrackingToken("");
+    setSuccessMessage("");
+    setError("");
+    setSelectedEvidenceFiles([]);
+    setUploadedEvidence([]);
+    setEvidenceError("");
+    setEvidenceSuccess("");
+    setEvidenceSkipped(false);
+    setCopyMessage("");
+
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+  }
+
   const canUploadMoreEvidence =
-    publicId &&
-    trackingToken &&
+    hasSubmittedIncident &&
+    !evidenceSkipped &&
     uploadedEvidence.length < MAX_EVIDENCE_FILES_PER_INCIDENT;
 
   return (
@@ -248,197 +312,6 @@ export default function SubmitIncidentPage() {
 
       {error && <div className="ssip-alert ssip-alert-error">{error}</div>}
 
-      {successMessage && (
-        <div className="ssip-alert ssip-alert-success">{successMessage}</div>
-      )}
-
-      {publicId && trackingToken && (
-        <div
-          style={{
-            border: "1px solid var(--ssip-border)",
-            borderRadius: "12px",
-            background: "#f8fbfe",
-            padding: "18px",
-            marginBottom: "24px",
-          }}
-        >
-          <h3 style={{ margin: "0 0 12px", color: "#001E3B" }}>
-            Incident submitted successfully
-          </h3>
-
-          <ResultValue label="Public ID" value={publicId} />
-          <ResultValue label="Tracking token" value={trackingToken} />
-
-          <p style={{ margin: "14px 0 0", color: "#004578" }}>
-            Save both values. You will need them to track this incident later.
-          </p>
-        </div>
-      )}
-
-      {publicId && trackingToken && (
-        <section
-          className="ssip-card"
-          style={{
-            padding: "22px",
-            marginBottom: "24px",
-            borderLeft: "6px solid #0078d4",
-          }}
-        >
-          <p
-            style={{
-              margin: 0,
-              color: "#0078d4",
-              fontSize: "12px",
-              fontWeight: 800,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-            }}
-          >
-            Optional evidence
-          </p>
-
-          <h3 style={{ margin: "8px 0 10px", color: "#001E3B" }}>
-            Attach screenshots
-          </h3>
-
-          <p
-            style={{
-              margin: "0 0 16px",
-              color: "#53657A",
-              fontSize: "14px",
-              lineHeight: 1.6,
-            }}
-          >
-            You can attach up to {MAX_EVIDENCE_FILES_PER_INCIDENT} screenshots
-            to help reviewers understand the issue. Accepted formats are PNG,
-            JPG, JPEG, and WEBP. Maximum size is 5 MB per image.
-          </p>
-
-          {evidenceError && (
-            <div
-              className="ssip-alert ssip-alert-error"
-              style={{ marginBottom: "14px" }}
-            >
-              {evidenceError}
-            </div>
-          )}
-
-          {evidenceSuccess && (
-            <div
-              className="ssip-alert ssip-alert-success"
-              style={{ marginBottom: "14px" }}
-            >
-              {evidenceSuccess}
-            </div>
-          )}
-
-          {uploadedEvidence.length > 0 && (
-            <div style={{ display: "grid", gap: "10px", marginBottom: "16px" }}>
-              {uploadedEvidence.map((item) => (
-                <div
-                  key={item.evidenceId}
-                  style={{
-                    border: "1px solid var(--ssip-border)",
-                    borderRadius: "10px",
-                    background: "#ffffff",
-                    padding: "12px",
-                  }}
-                >
-                  <p
-                    style={{
-                      margin: "0 0 4px",
-                      color: "#001E3B",
-                      fontWeight: 800,
-                    }}
-                  >
-                    {item.originalFileName}
-                  </p>
-                  <p
-                    style={{
-                      margin: 0,
-                      color: "#53657A",
-                      fontSize: "13px",
-                    }}
-                  >
-                    {item.contentType} · {formatBytes(item.fileSizeBytes)} ·{" "}
-                    {new Date(item.uploadedUtc).toLocaleString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {canUploadMoreEvidence ? (
-            <div style={{ display: "grid", gap: "14px" }}>
-              <input
-                className="ssip-field"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-                multiple
-                disabled={evidenceUploading}
-                onChange={handleEvidenceFileChange}
-              />
-
-              {selectedEvidenceFiles.length > 0 && (
-                <div
-                  style={{
-                    border: "1px solid var(--ssip-border)",
-                    borderRadius: "10px",
-                    background: "#ffffff",
-                    padding: "12px",
-                  }}
-                >
-                  <p
-                    style={{
-                      margin: "0 0 8px",
-                      color: "#004578",
-                      fontSize: "12px",
-                      fontWeight: 800,
-                      textTransform: "uppercase",
-                      letterSpacing: "0.08em",
-                    }}
-                  >
-                    Selected files
-                  </p>
-
-                  <ul
-                    style={{
-                      margin: 0,
-                      paddingLeft: "18px",
-                      color: "#001E3B",
-                      fontSize: "14px",
-                      lineHeight: 1.6,
-                    }}
-                  >
-                    {selectedEvidenceFiles.map((file) => (
-                      <li key={`${file.name}-${file.size}`}>
-                        {file.name} · {formatBytes(file.size)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              <button
-                type="button"
-                className="ssip-button ssip-button-primary"
-                disabled={
-                  evidenceUploading || selectedEvidenceFiles.length === 0
-                }
-                onClick={handleEvidenceUpload}
-                style={{ justifySelf: "start", minWidth: "180px" }}
-              >
-                {evidenceUploading ? "Uploading..." : "Upload screenshots"}
-              </button>
-            </div>
-          ) : (
-            <p style={{ margin: 0, color: "#004578", fontSize: "14px" }}>
-              Maximum number of screenshots reached for this incident.
-            </p>
-          )}
-        </section>
-      )}
-
       {loading && (
         <>
           <LoadingBanner
@@ -472,213 +345,607 @@ export default function SubmitIncidentPage() {
         </>
       )}
 
-      <form
-        onSubmit={handleSubmit}
-        style={{
-          display: loading ? "none" : "grid",
-          gap: "20px",
-        }}
-      >
-        <section
-          className="ssip-submit-grid"
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1.4fr) minmax(280px, 0.8fr)",
-            gap: "20px",
-          }}
-        >
-          <div className="ssip-card" style={{ padding: "22px" }}>
-            <h3 style={{ margin: "0 0 16px", color: "#001E3B" }}>
-              Incident details
-            </h3>
+      {hasSubmittedIncident && (
+        <div ref={successRef}>
+          <SuccessTrackingPanel
+            publicId={publicId}
+            trackingToken={trackingToken}
+            successMessage={successMessage}
+            copyMessage={copyMessage}
+            onCopyPublicId={() => copyToClipboard(publicId, "Public ID")}
+            onCopyTrackingToken={() =>
+              copyToClipboard(trackingToken, "Tracking token")
+            }
+            onCopyBoth={copyTrackingDetails}
+            onSubmitAnother={handleSubmitAnotherIncident}
+          />
 
-            <div style={{ display: "grid", gap: "16px" }}>
-              <div>
-                <label className="ssip-label" htmlFor="title">
-                  Title
-                </label>
-                <input
-                  id="title"
-                  className="ssip-field"
-                  value={title}
-                  onChange={(event) => setTitle(event.target.value)}
-                  required
-                  placeholder="Short summary of the incident"
-                />
-              </div>
-
-              <div>
-                <label className="ssip-label" htmlFor="description">
-                  Description
-                </label>
-                <textarea
-                  id="description"
-                  className="ssip-field"
-                  value={description}
-                  onChange={(event) => setDescription(event.target.value)}
-                  required
-                  rows={7}
-                  placeholder="Describe what happened, affected systems, timeline, and indicators."
-                  style={{ resize: "vertical" }}
-                />
-              </div>
-            </div>
-          </div>
-
-          <aside className="ssip-card" style={{ padding: "22px" }}>
-            <h3 style={{ margin: "0 0 16px", color: "#001E3B" }}>
-              Classification
-            </h3>
-
-            <div style={{ display: "grid", gap: "16px" }}>
-              <div>
-                <label className="ssip-label" htmlFor="reportType">
-                  Report type
-                </label>
-                <select
-                  id="reportType"
-                  className="ssip-field"
-                  value={reportTypeCode}
-                  onChange={(event) =>
-                    setReportTypeCode(event.target.value as ReportTypeCode)
-                  }
-                >
-                  <option value="incident">Incident</option>
-                  <option value="vulnerability">Vulnerability</option>
-                  <option value="suspicious_activity">
-                    Suspicious activity
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label className="ssip-label" htmlFor="category">
-                  Category
-                </label>
-                <select
-                  id="category"
-                  className="ssip-field"
-                  value={categoryCode}
-                  onChange={(event) =>
-                    setCategoryCode(event.target.value as CategoryCode | "")
-                  }
-                >
-                  {categories.map((category) => (
-                    <option
-                      key={category.value || "none"}
-                      value={category.value}
-                    >
-                      {category.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="ssip-label" htmlFor="severity">
-                  Severity
-                </label>
-                <select
-                  id="severity"
-                  className="ssip-field"
-                  value={severityCode}
-                  onChange={(event) =>
-                    setSeverityCode(event.target.value as SeverityCode)
-                  }
-                >
-                  <option value="low">Low</option>
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="critical">Critical</option>
-                </select>
-              </div>
-            </div>
-          </aside>
-        </section>
-
-        <section className="ssip-card" style={{ padding: "22px" }}>
-          <h3 style={{ margin: "0 0 16px", color: "#001E3B" }}>
-            Reporter information
-          </h3>
-
-          <label
-            style={{
-              display: "flex",
-              gap: "10px",
-              alignItems: "center",
-              marginBottom: "16px",
-              color: "#001E3B",
-              fontWeight: 700,
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={isAnonymous}
-              onChange={(event) => setIsAnonymous(event.target.checked)}
+          {!evidenceSkipped && (
+            <EvidenceUploadPanel
+              selectedEvidenceFiles={selectedEvidenceFiles}
+              uploadedEvidence={uploadedEvidence}
+              evidenceError={evidenceError}
+              evidenceSuccess={evidenceSuccess}
+              evidenceUploading={evidenceUploading}
+              canUploadMoreEvidence={Boolean(canUploadMoreEvidence)}
+              onFileChange={handleEvidenceFileChange}
+              onUpload={handleEvidenceUpload}
+              onSkip={handleSkipEvidence}
             />
-            Submit anonymously
-          </label>
+          )}
 
-          {!isAnonymous && (
-            <div
-              className="ssip-responsive-grid"
+          {evidenceSkipped && (
+            <section
+              className="ssip-card"
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-                gap: "16px",
+                padding: "22px",
+                marginBottom: "24px",
+                borderLeft: "6px solid #107c10",
               }}
             >
-              <div>
-                <label className="ssip-label" htmlFor="submitterName">
-                  Your name
-                </label>
-                <input
-                  id="submitterName"
-                  className="ssip-field"
-                  value={submitterName}
-                  onChange={(event) => setSubmitterName(event.target.value)}
-                  placeholder="Optional"
-                />
-              </div>
+              <h3 style={{ margin: "0 0 8px", color: "#001E3B" }}>
+                Evidence skipped
+              </h3>
 
-              <div>
-                <label className="ssip-label" htmlFor="submitterEmail">
-                  Your email
-                </label>
-                <input
-                  id="submitterEmail"
-                  className="ssip-field"
-                  type="email"
-                  value={submitterEmail}
-                  onChange={(event) => setSubmitterEmail(event.target.value)}
-                  placeholder="Optional"
-                />
+              <p
+                style={{
+                  margin: "0 0 16px",
+                  color: "#53657A",
+                  fontSize: "14px",
+                  lineHeight: 1.6,
+                }}
+              >
+                Evidence is optional. Your incident has already been submitted.
+                Keep your public ID and tracking token so you can check the
+                status later.
+              </p>
+
+              <div
+                className="ssip-header-actions"
+                style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}
+              >
+                <Link
+                  to="/track"
+                  className="ssip-button ssip-button-primary"
+                  style={{ textDecoration: "none" }}
+                >
+                  Track this incident
+                </Link>
+
+                <button
+                  type="button"
+                  className="ssip-button"
+                  onClick={() => setEvidenceSkipped(false)}
+                >
+                  Attach evidence after all
+                </button>
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
+      {!loading && !hasSubmittedIncident && (
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "20px" }}>
+          <section
+            className="ssip-submit-grid"
+            style={{
+              display: "grid",
+              gridTemplateColumns: "minmax(0, 1.4fr) minmax(280px, 0.8fr)",
+              gap: "20px",
+            }}
+          >
+            <div className="ssip-card" style={{ padding: "22px" }}>
+              <h3 style={{ margin: "0 0 16px", color: "#001E3B" }}>
+                Incident details
+              </h3>
+
+              <div style={{ display: "grid", gap: "16px" }}>
+                <div>
+                  <label className="ssip-label" htmlFor="title">
+                    Title
+                  </label>
+                  <input
+                    id="title"
+                    className="ssip-field"
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    required
+                    placeholder="Short summary of the incident"
+                  />
+                </div>
+
+                <div>
+                  <label className="ssip-label" htmlFor="description">
+                    Description
+                  </label>
+                  <textarea
+                    id="description"
+                    className="ssip-field"
+                    value={description}
+                    onChange={(event) => setDescription(event.target.value)}
+                    required
+                    rows={7}
+                    placeholder="Describe what happened, affected systems, timeline, and indicators."
+                    style={{ resize: "vertical" }}
+                  />
+                </div>
               </div>
             </div>
-          )}
-        </section>
 
-        <div
-          className="ssip-header-actions"
-          style={{ display: "flex", justifyContent: "flex-end" }}
-        >
-          <button
-            type="submit"
-            disabled={loading}
-            className="ssip-button ssip-button-primary"
-            style={{ minWidth: "180px" }}
+            <aside className="ssip-card" style={{ padding: "22px" }}>
+              <h3 style={{ margin: "0 0 16px", color: "#001E3B" }}>
+                Classification
+              </h3>
+
+              <div style={{ display: "grid", gap: "16px" }}>
+                <div>
+                  <label className="ssip-label" htmlFor="reportType">
+                    Report type
+                  </label>
+                  <select
+                    id="reportType"
+                    className="ssip-field"
+                    value={reportTypeCode}
+                    onChange={(event) =>
+                      setReportTypeCode(event.target.value as ReportTypeCode)
+                    }
+                  >
+                    <option value="incident">Incident</option>
+                    <option value="vulnerability">Vulnerability</option>
+                    <option value="suspicious_activity">
+                      Suspicious activity
+                    </option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="ssip-label" htmlFor="category">
+                    Category
+                  </label>
+                  <select
+                    id="category"
+                    className="ssip-field"
+                    value={categoryCode}
+                    onChange={(event) =>
+                      setCategoryCode(event.target.value as CategoryCode | "")
+                    }
+                  >
+                    {categories.map((category) => (
+                      <option
+                        key={category.value || "none"}
+                        value={category.value}
+                      >
+                        {category.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="ssip-label" htmlFor="severity">
+                    Severity
+                  </label>
+                  <select
+                    id="severity"
+                    className="ssip-field"
+                    value={severityCode}
+                    onChange={(event) =>
+                      setSeverityCode(event.target.value as SeverityCode)
+                    }
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="critical">Critical</option>
+                  </select>
+                </div>
+              </div>
+            </aside>
+          </section>
+
+          <section className="ssip-card" style={{ padding: "22px" }}>
+            <h3 style={{ margin: "0 0 16px", color: "#001E3B" }}>
+              Reporter information
+            </h3>
+
+            <label
+              style={{
+                display: "flex",
+                gap: "10px",
+                alignItems: "center",
+                marginBottom: "16px",
+                color: "#001E3B",
+                fontWeight: 700,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={isAnonymous}
+                onChange={(event) => setIsAnonymous(event.target.checked)}
+              />
+              Submit anonymously
+            </label>
+
+            {!isAnonymous && (
+              <div
+                className="ssip-responsive-grid"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                  gap: "16px",
+                }}
+              >
+                <div>
+                  <label className="ssip-label" htmlFor="submitterName">
+                    Your name
+                  </label>
+                  <input
+                    id="submitterName"
+                    className="ssip-field"
+                    value={submitterName}
+                    onChange={(event) => setSubmitterName(event.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
+
+                <div>
+                  <label className="ssip-label" htmlFor="submitterEmail">
+                    Your email
+                  </label>
+                  <input
+                    id="submitterEmail"
+                    className="ssip-field"
+                    type="email"
+                    value={submitterEmail}
+                    onChange={(event) => setSubmitterEmail(event.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+            )}
+          </section>
+
+          <div
+            className="ssip-header-actions"
+            style={{ display: "flex", justifyContent: "flex-end" }}
           >
-            {loading ? "Submitting..." : "Submit Incident"}
-          </button>
-        </div>
-      </form>
+            <button
+              type="submit"
+              disabled={loading}
+              className="ssip-button ssip-button-primary"
+              style={{ minWidth: "180px" }}
+            >
+              Submit Incident
+            </button>
+          </div>
+        </form>
+      )}
     </section>
   );
 }
 
-function ResultValue({ label, value }: { label: string; value: string }) {
+function SuccessTrackingPanel({
+  publicId,
+  trackingToken,
+  successMessage,
+  copyMessage,
+  onCopyPublicId,
+  onCopyTrackingToken,
+  onCopyBoth,
+  onSubmitAnother,
+}: {
+  publicId: string;
+  trackingToken: string;
+  successMessage: string;
+  copyMessage: string;
+  onCopyPublicId: () => void;
+  onCopyTrackingToken: () => void;
+  onCopyBoth: () => void;
+  onSubmitAnother: () => void;
+}) {
   return (
-    <div style={{ marginBottom: "12px" }}>
+    <section
+      className="ssip-card"
+      style={{
+        padding: "22px",
+        marginBottom: "24px",
+        borderLeft: "6px solid #107c10",
+        background: "#f8fbfe",
+      }}
+    >
+      <p
+        style={{
+          margin: 0,
+          color: "#107c10",
+          fontSize: "12px",
+          fontWeight: 800,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+        }}
+      >
+        Incident created
+      </p>
+
+      <h3 style={{ margin: "8px 0 8px", color: "#001E3B" }}>
+        Save your tracking details
+      </h3>
+
+      <p
+        style={{
+          margin: "0 0 16px",
+          color: "#53657A",
+          fontSize: "14px",
+          lineHeight: 1.6,
+        }}
+      >
+        {successMessage ||
+          "Your incident has been submitted successfully. Save both values below before leaving this page."}
+      </p>
+
+      {copyMessage && (
+        <div
+          className="ssip-alert ssip-alert-success"
+          style={{ marginBottom: "14px" }}
+        >
+          {copyMessage}
+        </div>
+      )}
+
+      <div style={{ display: "grid", gap: "14px" }}>
+        <ResultValue
+          label="Public ID"
+          value={publicId}
+          onCopy={onCopyPublicId}
+        />
+        <ResultValue
+          label="Tracking token"
+          value={trackingToken}
+          onCopy={onCopyTrackingToken}
+        />
+      </div>
+
+      <div
+        className="ssip-header-actions"
+        style={{
+          display: "flex",
+          gap: "10px",
+          flexWrap: "wrap",
+          marginTop: "18px",
+        }}
+      >
+        <button
+          type="button"
+          className="ssip-button ssip-button-primary"
+          onClick={onCopyBoth}
+        >
+          Copy both values
+        </button>
+
+        <Link
+          to="/track"
+          className="ssip-button"
+          style={{ textDecoration: "none" }}
+        >
+          Go to tracking page
+        </Link>
+
+        <button type="button" className="ssip-button" onClick={onSubmitAnother}>
+          Submit another incident
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function EvidenceUploadPanel({
+  selectedEvidenceFiles,
+  uploadedEvidence,
+  evidenceError,
+  evidenceSuccess,
+  evidenceUploading,
+  canUploadMoreEvidence,
+  onFileChange,
+  onUpload,
+  onSkip,
+}: {
+  selectedEvidenceFiles: File[];
+  uploadedEvidence: UploadEvidenceResponse[];
+  evidenceError: string;
+  evidenceSuccess: string;
+  evidenceUploading: boolean;
+  canUploadMoreEvidence: boolean;
+  onFileChange: (event: ChangeEvent<HTMLInputElement>) => void;
+  onUpload: () => void;
+  onSkip: () => void;
+}) {
+  return (
+    <section
+      className="ssip-card"
+      style={{
+        padding: "22px",
+        marginBottom: "24px",
+        borderLeft: "6px solid #0078d4",
+      }}
+    >
+      <p
+        style={{
+          margin: 0,
+          color: "#0078d4",
+          fontSize: "12px",
+          fontWeight: 800,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+        }}
+      >
+        Optional evidence
+      </p>
+
+      <h3 style={{ margin: "8px 0 10px", color: "#001E3B" }}>
+        Attach screenshots
+      </h3>
+
+      <p
+        style={{
+          margin: "0 0 16px",
+          color: "#53657A",
+          fontSize: "14px",
+          lineHeight: 1.6,
+        }}
+      >
+        Screenshots can help reviewers understand the issue, but this step is
+        optional. Accepted formats are PNG, JPG, JPEG, and WEBP. Maximum size is
+        5 MB per image.
+      </p>
+
+      {evidenceError && (
+        <div
+          className="ssip-alert ssip-alert-error"
+          style={{ marginBottom: "14px" }}
+        >
+          {evidenceError}
+        </div>
+      )}
+
+      {evidenceSuccess && (
+        <div
+          className="ssip-alert ssip-alert-success"
+          style={{ marginBottom: "14px" }}
+        >
+          {evidenceSuccess}
+        </div>
+      )}
+
+      {uploadedEvidence.length > 0 && (
+        <div style={{ display: "grid", gap: "10px", marginBottom: "16px" }}>
+          {uploadedEvidence.map((item) => (
+            <div
+              key={item.evidenceId}
+              style={{
+                border: "1px solid var(--ssip-border)",
+                borderRadius: "10px",
+                background: "#ffffff",
+                padding: "12px",
+              }}
+            >
+              <p
+                style={{
+                  margin: "0 0 4px",
+                  color: "#001E3B",
+                  fontWeight: 800,
+                }}
+              >
+                {item.originalFileName}
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  color: "#53657A",
+                  fontSize: "13px",
+                }}
+              >
+                {item.contentType} · {formatBytes(item.fileSizeBytes)} ·{" "}
+                {new Date(item.uploadedUtc).toLocaleString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {canUploadMoreEvidence ? (
+        <div style={{ display: "grid", gap: "14px" }}>
+          <input
+            className="ssip-field"
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            multiple
+            disabled={evidenceUploading}
+            onChange={onFileChange}
+          />
+
+          {selectedEvidenceFiles.length > 0 && (
+            <div
+              style={{
+                border: "1px solid var(--ssip-border)",
+                borderRadius: "10px",
+                background: "#ffffff",
+                padding: "12px",
+              }}
+            >
+              <p
+                style={{
+                  margin: "0 0 8px",
+                  color: "#004578",
+                  fontSize: "12px",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                Selected files
+              </p>
+
+              <ul
+                style={{
+                  margin: 0,
+                  paddingLeft: "18px",
+                  color: "#001E3B",
+                  fontSize: "14px",
+                  lineHeight: 1.6,
+                }}
+              >
+                {selectedEvidenceFiles.map((file) => (
+                  <li key={`${file.name}-${file.size}`}>
+                    {file.name} · {formatBytes(file.size)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div
+            className="ssip-header-actions"
+            style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}
+          >
+            <button
+              type="button"
+              className="ssip-button ssip-button-primary"
+              disabled={evidenceUploading || selectedEvidenceFiles.length === 0}
+              onClick={onUpload}
+            >
+              {evidenceUploading ? "Uploading..." : "Upload screenshots"}
+            </button>
+
+            <button
+              type="button"
+              className="ssip-button"
+              disabled={evidenceUploading}
+              onClick={onSkip}
+            >
+              Skip evidence
+            </button>
+          </div>
+        </div>
+      ) : (
+        <p style={{ margin: 0, color: "#004578", fontSize: "14px" }}>
+          Maximum number of screenshots reached for this incident.
+        </p>
+      )}
+    </section>
+  );
+}
+
+function ResultValue({
+  label,
+  value,
+  onCopy,
+}: {
+  label: string;
+  value: string;
+  onCopy: () => void;
+}) {
+  return (
+    <div>
       <p
         style={{
           margin: "0 0 4px",
@@ -691,20 +958,34 @@ function ResultValue({ label, value }: { label: string; value: string }) {
       >
         {label}
       </p>
-      <code
+
+      <div
         style={{
-          display: "block",
-          color: "#001E3B",
-          wordBreak: "break-all",
-          fontSize: "14px",
-          background: "#ffffff",
-          border: "1px solid var(--ssip-border)",
-          borderRadius: "8px",
-          padding: "10px",
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1fr) auto",
+          gap: "10px",
+          alignItems: "stretch",
         }}
       >
-        {value}
-      </code>
+        <code
+          style={{
+            display: "block",
+            color: "#001E3B",
+            wordBreak: "break-all",
+            fontSize: "14px",
+            background: "#ffffff",
+            border: "1px solid var(--ssip-border)",
+            borderRadius: "8px",
+            padding: "10px",
+          }}
+        >
+          {value}
+        </code>
+
+        <button type="button" className="ssip-button" onClick={onCopy}>
+          Copy
+        </button>
+      </div>
     </div>
   );
 }

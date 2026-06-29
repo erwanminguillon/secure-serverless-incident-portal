@@ -16,5 +16,4 @@
 - malware scanning pipeline
 - advanced analytics dashboards
 - custom domain
-- IaC-first deployment
 - multi-environment release strategy
