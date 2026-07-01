@@ -21,6 +21,13 @@ import type {
   ReferenceData,
 } from "../../api/adminApi";
 
+import {
+  LoadingBanner,
+  SkeletonBlock,
+  SkeletonCard,
+  SkeletonText,
+} from "../../components/Skeleton";
+
 import { clearAdminSession, setAdminSession } from "./adminSession";
 
 const styles: Record<string, CSSProperties> = {
@@ -558,20 +565,7 @@ export function AdminIncidentDetailPage() {
   }
 
   if (loading) {
-    return (
-      <section>
-        <div style={styles.info}>
-          <strong>Loading incident details...</strong>
-          <p style={{ margin: "8px 0 0", lineHeight: 1.5 }}>
-            The first request can take up to 60 seconds while Azure starts the
-            serverless backend and database. Please keep this page open.
-          </p>
-          <p style={{ margin: "8px 0 0", fontWeight: 800 }}>
-            Elapsed: {elapsedSeconds}s
-          </p>
-        </div>
-      </section>
-    );
+    return <CaseDetailSkeleton elapsedSeconds={elapsedSeconds} />;
   }
 
   if (!incident) {
@@ -916,6 +910,208 @@ function EvidenceItem({
         {loadingEvidenceId === item.evidenceId ? "Opening..." : "Open evidence"}
       </button>
     </article>
+  );
+}
+
+function CaseDetailSkeleton({ elapsedSeconds }: { elapsedSeconds: number }) {
+  return (
+    <section>
+      <LoadingBanner
+        title="Loading incident case"
+        message="SSIP is verifying the admin session and loading incident details, comments, evidence metadata, and triage controls."
+        elapsedSeconds={elapsedSeconds}
+      />
+
+      <header
+        className="ssip-admin-header"
+        style={{
+          ...styles.pageHeader,
+          marginBottom: "18px",
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <SkeletonBlock width="140px" height="13px" />
+          <SkeletonBlock
+            width="70%"
+            height="36px"
+            borderRadius="10px"
+            style={{ marginTop: "10px" }}
+          />
+          <SkeletonBlock
+            width="45%"
+            height="14px"
+            style={{ marginTop: "10px" }}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: "10px" }}>
+          <SkeletonBlock width="130px" height="40px" borderRadius="8px" />
+          <SkeletonBlock width="90px" height="40px" borderRadius="8px" />
+        </div>
+      </header>
+
+      <div className="ssip-admin-detail-layout" style={styles.layout}>
+        <div style={{ display: "grid", gap: "18px" }}>
+          <SkeletonCard>
+            <SkeletonBlock width="180px" height="20px" />
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: "14px",
+              }}
+            >
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div
+                  key={index}
+                  style={{
+                    border: "1px solid var(--ssip-border)",
+                    borderRadius: "10px",
+                    background: "#f8fbfe",
+                    padding: "12px",
+                  }}
+                >
+                  <SkeletonBlock width="45%" height="12px" />
+                  <SkeletonBlock
+                    width={index % 2 === 0 ? "70%" : "55%"}
+                    height="18px"
+                    borderRadius="8px"
+                    style={{ marginTop: "8px" }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                border: "1px solid var(--ssip-border)",
+                borderRadius: "10px",
+                background: "#f8fbfe",
+                padding: "14px",
+              }}
+            >
+              <SkeletonBlock width="120px" height="16px" />
+              <SkeletonText lines={5} style={{ marginTop: "12px" }} />
+            </div>
+          </SkeletonCard>
+
+          <SkeletonCard>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: "12px",
+                alignItems: "center",
+              }}
+            >
+              <SkeletonBlock width="120px" height="20px" />
+              <SkeletonBlock width="140px" height="40px" borderRadius="8px" />
+            </div>
+
+            <div style={{ display: "grid", gap: "12px" }}>
+              {Array.from({ length: 2 }).map((_, index) => (
+                <div
+                  key={index}
+                  style={{
+                    border: "1px solid var(--ssip-border)",
+                    borderLeft: "4px solid #0078d4",
+                    borderRadius: "10px",
+                    background: "#ffffff",
+                    padding: "14px",
+                  }}
+                >
+                  <SkeletonBlock width="50%" height="18px" />
+                  <SkeletonBlock
+                    width="80%"
+                    height="13px"
+                    style={{ marginTop: "10px" }}
+                  />
+                  <SkeletonBlock
+                    width="45%"
+                    height="13px"
+                    style={{ marginTop: "8px" }}
+                  />
+                  <SkeletonBlock
+                    width="120px"
+                    height="38px"
+                    borderRadius="8px"
+                    style={{ marginTop: "14px" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </SkeletonCard>
+
+          <SkeletonCard>
+            <SkeletonBlock width="170px" height="20px" />
+
+            <div style={{ display: "grid", gap: "12px" }}>
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  style={{
+                    border: "1px solid var(--ssip-border)",
+                    borderLeft: "4px solid #0078d4",
+                    borderRadius: "10px",
+                    background: "#ffffff",
+                    padding: "14px",
+                  }}
+                >
+                  <SkeletonText lines={2} />
+                  <SkeletonBlock
+                    width="40%"
+                    height="12px"
+                    style={{ marginTop: "10px" }}
+                  />
+                </div>
+              ))}
+            </div>
+
+            <SkeletonBlock width="100%" height="110px" borderRadius="10px" />
+            <SkeletonBlock width="190px" height="40px" borderRadius="8px" />
+          </SkeletonCard>
+        </div>
+
+        <aside style={{ display: "grid", gap: "18px", alignContent: "start" }}>
+          <SkeletonCard>
+            <SkeletonBlock width="150px" height="20px" />
+
+            <div style={{ display: "grid", gap: "14px" }}>
+              <SkeletonBlock width="100%" height="42px" borderRadius="8px" />
+              <SkeletonBlock width="100%" height="42px" borderRadius="8px" />
+              <SkeletonBlock width="100%" height="42px" borderRadius="8px" />
+              <SkeletonBlock width="180px" height="40px" borderRadius="8px" />
+            </div>
+          </SkeletonCard>
+
+          <SkeletonCard>
+            <SkeletonBlock width="180px" height="20px" />
+
+            <div style={{ display: "grid", gap: "12px" }}>
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div
+                  key={index}
+                  style={{
+                    border: "1px solid var(--ssip-border)",
+                    borderRadius: "10px",
+                    background: "#f8fbfe",
+                    padding: "12px",
+                  }}
+                >
+                  <SkeletonBlock width="50%" height="12px" />
+                  <SkeletonBlock
+                    width="70%"
+                    height="18px"
+                    style={{ marginTop: "8px" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </SkeletonCard>
+        </aside>
+      </div>
+    </section>
   );
 }
 

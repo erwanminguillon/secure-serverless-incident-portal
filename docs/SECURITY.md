@@ -26,3 +26,56 @@ This is expected.
 Local backend:
 
 src/api/local.settings.json
+
+## Evidence upload security
+
+SSIP supports controlled screenshot evidence upload.
+
+The feature is intentionally limited to reduce abuse risk, malware risk, privacy risk, and denial-of-wallet risk.
+
+### Public upload authorization
+
+Evidence upload requires both:
+- publicId
+- trackingToken
+
+The backend verifies the tracking token by hashing the submitted token and comparing it to the stored TrackingTokenHash.
+A public incident ID alone is not enough to upload evidence.
+This prevents someone from attaching files to an incident only by knowing or guessing the public incident ID.
+It  accepts only:
+- image/png
+- image/jpeg
+- image/webp
+
+The backend rejects unsupported formats such as:
+- SVG
+- PDF
+- Office documents
+- ZIP archives
+- executables
+- HTML
+- plain text
+
+### Size and count limits
+Evidence upload is limited to:
+- 5 MB
+- Maximum evidence files per incident: 3
+
+These limits reduce storage abuse, accidental large uploads, and denial-of-wallet risk.
+
+### Storage model
+Evidence files are stored in a private Azure Blob Storage container.
+
+SQL stores metadata only:
+- EvidenceId
+- IncidentId
+- OriginalFileName
+- BlobName
+- ContentType
+- FileSizeBytes
+- Sha256Hash
+- UploadedByType
+- UploadedUtc
+
+Blob names are generated server-side and do not rely on user-controlled filenames.
+The original filename is stored as metadata for admin usability, but it is not used as the blob path.

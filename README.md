@@ -19,6 +19,7 @@ I suggest having a look at the docs/images folders as it contains pictures of th
 - current-architecture
 - security-model
 - main-features
+- evidence upload
 - tech-stack
 - deployment-overview
 - admin-key-rotation
@@ -248,7 +249,28 @@ This keeps sensitive tokens out of the database in plaintext form.
 - No plaintext admin key stored in frontend storage.
 
 ---
+## Evidence upload
 
+SSIP supports optional screenshot evidence upload after an incident has been submitted.
+
+After a reporter receives their public incident ID and tracking token, the reporter can attach screenshots that help explain the issue. This is useful for cases such as phishing pages, suspicious login prompts, browser warnings, fake support messages, or other visible indicators.
+
+Evidence upload is intentionally limited to image screenshots only.
+
+Supported formats:
+
+
+- PNG
+- JPG / JPEG
+- WEBP
+
+Limits :
+- Maximum files per incident: 3
+- Maximum file size: 5 MB per image
+
+Evidence files are stored in private Azure Blob Storage. Evidence metadata is stored in Azure SQL in the IncidentEvidence table.
+Admins can view uploaded evidence from the incident detail page. The frontend does not receive public Azure Blob URLs, storage keys, or long-lived SAS URLs. Evidence is loaded through an authenticated backend endpoint and displayed in the browser as a temporary local blob: object URL.
+---
 ## Tech stack
 
 ### Frontend
