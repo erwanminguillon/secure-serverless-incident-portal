@@ -918,7 +918,7 @@ function CaseDetailSkeleton({ elapsedSeconds }: { elapsedSeconds: number }) {
     <section>
       <LoadingBanner
         title="Loading incident case"
-        message="SSIP is verifying the admin session and loading incident details, comments, evidence metadata, and triage controls."
+        message="SSIP is loading the incident, please wait."
         elapsedSeconds={elapsedSeconds}
       />
 

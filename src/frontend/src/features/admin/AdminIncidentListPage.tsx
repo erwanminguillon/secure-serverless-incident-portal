@@ -490,7 +490,7 @@ export function AdminIncidentListPage() {
           <>
             <LoadingBanner
               title="Loading SOC dashboard"
-              message="The first request can take up to 60 seconds while Azure starts the serverless backend and database. The dashboard structure is loading while SSIP waits for the data."
+              message="The first request can take up to 60 seconds while Azure starts the serverless backend."
               elapsedSeconds={elapsedSeconds}
             />
 
