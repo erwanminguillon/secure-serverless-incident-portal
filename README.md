@@ -59,6 +59,7 @@ Public users can:
 - Receive a public incident ID.
 - Receive a one-time tracking token.
 - Track the status of the submitted report later.
+- Upload an image of the incident.
 
 The tracking token is not stored in plaintext. The backend stores only a hash, so the token cannot simply be recovered from the database.
 
@@ -75,6 +76,7 @@ Administrators can:
 - Add internal comments.
 - View an internal comments timeline.
 - Log out and revoke the browser-side admin session.
+- Observe uploaded images
 
 The admin interface is designed to feel closer to a lightweight SOC console than a default web form.
 
